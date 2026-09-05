@@ -40,6 +40,10 @@ declare -p CHROMA_EXTRA_DANGER_COMMANDS &>/dev/null || declare -ga CHROMA_EXTRA_
 # suggestions unless the user explicitly opts in.
 : "${CHROMA_SUGGESTIONS:=0}"
 
+# Suppress ble.sh's red-background parse/argument faces and its red
+# "[ble: exit N]" marker. Chroma's semantic danger colors stay active.
+: "${CHROMA_BLE_ERROR_FEEDBACK:=0}"
+
 # Follow Omarchy's active colors.toml and lift low-contrast palette entries
 # toward black or white until they remain readable at small terminal sizes.
 : "${CHROMA_THEME_INTEGRATION:=1}"

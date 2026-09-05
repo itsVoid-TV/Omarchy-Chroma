@@ -8,9 +8,26 @@ if ((BASH_VERSINFO[0] < 4 || BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4)); th
   return 1
 fi
 
-CHROMA_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-CHROMA_VERSION=0.2.0
+CHROMA_ROOT=$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && builtin pwd -P) || {
+  printf 'Omarchy Chroma: could not resolve its installation directory.\n' >&2
+  return 1
+}
+CHROMA_VERSION=0.2.1
 _chromarchy_should_attach=0
+
+for _chromarchy_required in \
+  config/defaults.bash \
+  lib/theme.bash \
+  lib/parser.bash \
+  lib/layer.bash; do
+  if [[ ! -r $CHROMA_ROOT/$_chromarchy_required ]]; then
+    printf 'Omarchy Chroma: incomplete installation in %s; run install.sh again.\n' \
+      "$CHROMA_ROOT" >&2
+    unset _chromarchy_required
+    return 1
+  fi
+done
+unset _chromarchy_required
 
 if [[ ! ${BLE_VERSION:-} ]]; then
   _chromarchy_blesh=
@@ -45,6 +62,15 @@ chromarchy::theme_apply
 # automatic ghost text unless it was explicitly requested in the user config.
 if [[ $CHROMA_SUGGESTIONS != 1 ]]; then
   bleopt complete_auto_complete=
+fi
+
+# ble.sh normally paints parse/argument errors with a red or pink background
+# and prints a red "[ble: exit N]" marker after failed commands. Chroma keeps
+# semantic danger colors, but defaults these unrelated overlays to quiet.
+if [[ $CHROMA_BLE_ERROR_FEEDBACK != 1 ]]; then
+  bleopt exec_errexit_mark=
+  ble-face -s syntax_error none
+  ble-face -s argument_error none
 fi
 
 if [[ $CHROMA_FZF_INTEGRATION == 1 ]] && command -v fzf &>/dev/null; then
@@ -85,7 +111,7 @@ chromarchy::legend() {
 
 chromarchy::doctor() {
   local failures=0 data_home=${XDG_DATA_HOME:-$HOME/.local/share}
-  local layer_status='NOT REGISTERED' suggestions='disabled' theme_status
+  local layer_status='NOT REGISTERED' suggestions='disabled' error_feedback='disabled' theme_status
   printf 'Omarchy Chroma %s\n' "$CHROMA_VERSION"
   printf '  %-18s %s\n' 'Bash' "${BASH_VERSION:-missing}"
   if [[ ${BLE_VERSION:-} ]]; then
@@ -110,6 +136,8 @@ chromarchy::doctor() {
   printf '  %-18s %s\n' 'render layer' "$layer_status"
   [[ $CHROMA_SUGGESTIONS == 1 ]] && suggestions=enabled
   printf '  %-18s %s\n' 'auto suggestions' "$suggestions"
+  [[ $CHROMA_BLE_ERROR_FEEDBACK == 1 ]] && error_feedback=enabled
+  printf '  %-18s %s\n' 'red error feedback' "$error_feedback"
   theme_status=$CHROMA_THEME_SOURCE
   if [[ $CHROMA_THEME_SOURCE == omarchy ]]; then
     theme_status="$CHROMA_THEME_NAME ($CHROMA_THEME_MODE)"

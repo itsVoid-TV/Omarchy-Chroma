@@ -28,7 +28,9 @@ chroma legend
 ```
 
 Automatic ghost-text suggestions are disabled. Normal Tab completion and
-Omarchy's completion/history shortcuts remain available.
+Omarchy's completion/history shortcuts remain available. Chroma also removes
+ble.sh's red parse/argument backgrounds and its `[ble: exit N]` marker by
+default; semantic danger colors such as red underlined `rm` remain active.
 
 The installer uses only user-owned XDG directories, adds one marked block to `~/.bashrc`, and does **not** call `sudo`. If `ble.sh` is missing, it downloads one pinned build and verifies its SHA-256 checksum before installing it locally.
 
@@ -80,6 +82,9 @@ CHROMA_STYLES[danger]='fg=white,bg=red,bold'
 # Opt in only if you want ble.sh's automatic ghost-text suggestions:
 CHROMA_SUGGESTIONS=1
 
+# Opt in only if you want ble.sh's red error overlays and exit marker:
+CHROMA_BLE_ERROR_FEEDBACK=1
+
 CHROMA_EXTRA_INSTALL_COMMANDS+=(my-installer)
 CHROMA_EXTRA_REMOVE_COMMANDS+=(my-uninstaller)
 CHROMA_EXTRA_DANGER_COMMANDS+=(my-disk-wiper)
@@ -125,8 +130,9 @@ chroma doctor
 ```
 
 The report should show your Omarchy theme, its exact background color, and a
-`worst contrast` of at least `5.500`. After changing a theme manually, force an
-immediate refresh with:
+`worst contrast` of at least `5.500`. It should also report `semantic layer`
+as `ready`, `render layer` as `registered`, and `red error feedback` as
+`disabled`. After changing a theme manually, force an immediate refresh with:
 
 ```bash
 chroma reload
@@ -160,7 +166,7 @@ Chroma is a visual hint, not a security boundary. It never blocks a command, and
 - No OpenAI API key is needed. Deterministic local classification is faster and avoids exposing typed terminal input.
 - User changes stay in `~/.bashrc` and `~/.config`; `/usr/share/omarchy` is never modified.
 
-The approach follows the current [Omarchy Bash configuration](https://github.com/omacom/omarchy/blob/quattro/default/bashrc), the [Omarchy dotfiles guidance](https://github.com/omacom/omarchy/blob/quattro/manual/31-dotfiles.md), and the official [`ble.sh` extension model](https://github.com/akinomyoga/ble.sh).
+The approach follows the current [Omarchy Bash configuration](https://github.com/omacom/omarchy/blob/quattro/default/bashrc), including its [`cd`/`zd` alias](https://github.com/omacom/omarchy/blob/quattro/default/bash/aliases), the [Omarchy dotfiles guidance](https://github.com/omacom/omarchy/blob/quattro/manual/31-dotfiles.md), and the official [`ble.sh` extension model](https://github.com/akinomyoga/ble.sh).
 
 ## Development
 
@@ -172,7 +178,9 @@ The suite covers semantic parsing, shell wrappers, operators, quotes,
 redirections, comments, fresh installation, idempotent update, config
 preservation, uninstall, and ShellCheck. It also audits all 22 themes from the
 pinned Omarchy revision and checks the actual RGB/ANSI render from the pinned
-`ble.sh` build in pseudo-terminals using both Vantablack and White.
+`ble.sh` build in pseudo-terminals using both Vantablack and White. The PTY
+test also reproduces Omarchy's output-producing `cd` alias and verifies that
+Chroma starts silently without red error overlays.
 
 ## License
 

@@ -14,6 +14,10 @@
 # you want ble.sh's suggestions while typing. Tab completion is unaffected.
 # CHROMA_SUGGESTIONS=1
 
+# Red error overlays and the "[ble: exit N]" marker are disabled by default.
+# Set this to 1 only if you want ble.sh's original error feedback back.
+# CHROMA_BLE_ERROR_FEEDBACK=1
+
 # Omarchy's active theme is followed automatically. Chroma preserves each
 # theme's hue but raises faint colors to this minimum contrast ratio.
 # CHROMA_THEME_INTEGRATION=1

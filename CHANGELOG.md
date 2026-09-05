@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1 — 2026-09-05
+
+- Resolve the installation directory with Bash built-ins so Omarchy's
+  output-producing `cd`/`zd` alias cannot corrupt `CHROMA_ROOT` at startup.
+- Validate the installation before sourcing modules, reducing a partial
+  install to one actionable error instead of a cascade of shell messages.
+- Disable ble.sh's red parse/argument backgrounds and `[ble: exit N]` marker
+  by default while preserving Chroma's semantic danger highlighting.
+- Reproduce the stock Omarchy alias in the real pseudo-terminal integration
+  test and assert silent startup, registered rendering, and neutral error faces.
+
 ## 0.2.0 — 2026-09-05
 
 - Follow Omarchy's active semantic `colors.toml` on shell start and after theme

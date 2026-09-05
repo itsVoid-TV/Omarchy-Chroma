@@ -9,12 +9,44 @@ chroma_test_fail() {
 [[ -r ${CHROMA_TEST_ROOT:-}/lib/layer.bash ]] || chroma_test_fail 'test root is invalid'
 
 source "$CHROMA_BLESH_PATH" --attach=none || chroma_test_fail 'ble.sh failed to load'
-source "$CHROMA_TEST_ROOT/chromarchy.bash" || chroma_test_fail 'Chroma loader failed'
+
+# Stock Omarchy aliases `cd` to `zd`. Its fallback prints an icon and the new
+# path, which used to leak into CHROMA_ROOT through command substitution.
+zd() {
+  builtin cd -- "${@: -1}" || return
+  printf '\U000F17A9 %s\n' "$PWD"
+}
+alias cd=zd
+
+polluted_root=$(cd -- "$CHROMA_TEST_ROOT")
+[[ $polluted_root != "$CHROMA_TEST_ROOT" ]] ||
+  chroma_test_fail 'Omarchy cd fixture did not reproduce path pollution'
+
+loader_log=$(mktemp)
+if ! source "$CHROMA_TEST_ROOT/chromarchy.bash" >"$loader_log" 2>&1; then
+  loader_output=$(<"$loader_log")
+  rm -f -- "$loader_log"
+  chroma_test_fail "Chroma loader failed: ${loader_output//$'\n'/ | }"
+fi
+if [[ -s $loader_log ]]; then
+  loader_output=$(<"$loader_log")
+  rm -f -- "$loader_log"
+  chroma_test_fail "Chroma loader printed startup noise: ${loader_output//$'\n'/ | }"
+fi
+rm -f -- "$loader_log"
 
 [[ ${BLE_VERSION:-} ]] || chroma_test_fail 'BLE_VERSION is empty'
+[[ ${CHROMA_ROOT:-} == "$CHROMA_TEST_ROOT" ]] ||
+  chroma_test_fail "loader root was polluted: ${CHROMA_ROOT:-missing}"
 [[ ${CHROMA_LAYER_READY:-0} == 1 ]] || chroma_test_fail 'semantic layer is not ready'
 [[ ! ${bleopt_complete_auto_complete:-} ]] ||
   chroma_test_fail 'automatic suggestions are still enabled'
+[[ ! ${bleopt_exec_errexit_mark:-} ]] ||
+  chroma_test_fail 'red exit marker is still enabled'
+ble/color/face2g syntax_error
+[[ $ret == 0 ]] || chroma_test_fail "syntax errors still have a colored overlay: $ret"
+ble/color/face2g argument_error
+[[ $ret == 0 ]] || chroma_test_fail "argument errors still have a colored overlay: $ret"
 [[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]] ||
   chroma_test_fail 'semantic layer was not registered'
 [[ " ${_ble_hook_h_PRECMD[*]} " == *' chromarchy::theme_refresh '* ]] ||
@@ -70,8 +102,9 @@ expected_canonical=${CHROMA_EXPECTED_INSTALL_RGB//;/:}
 doctor_output=$(chromarchy::doctor) || chroma_test_fail 'chroma doctor reported a failure'
 [[ $doctor_output == *"$CHROMA_EXPECTED_THEME"* &&
    $doctor_output == *"$CHROMA_EXPECTED_BACKGROUND"* &&
-   $doctor_output == *'auto suggestions   disabled'* ]] ||
-  chroma_test_fail 'chroma doctor omitted theme or suggestion diagnostics'
+   $doctor_output == *'auto suggestions   disabled'* &&
+   $doctor_output == *'red error feedback disabled'* ]] ||
+  chroma_test_fail 'chroma doctor omitted theme or input-feedback diagnostics'
 
 printf 'render-probe %sINSTALL\e[0m on %s\n' "$rendered_sgr" "$CHROMA_EXPECTED_THEME"
 
