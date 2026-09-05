@@ -59,7 +59,8 @@ if [[ ! $source_dir ]]; then
   fi
 fi
 
-[[ -r $source_dir/chromarchy.bash && -r $source_dir/lib/parser.bash ]] ||
+[[ -r $source_dir/chromarchy.bash && -r $source_dir/lib/parser.bash &&
+   -r $source_dir/lib/theme.bash ]] ||
   die "invalid source directory: $source_dir"
 
 mkdir -p -- "$install_dir/config" "$install_dir/lib" "$config_home/omarchy-chroma"
@@ -67,6 +68,7 @@ install -m 0644 "$source_dir/chromarchy.bash" "$install_dir/chromarchy.bash"
 install -m 0644 "$source_dir/config/defaults.bash" "$install_dir/config/defaults.bash"
 install -m 0644 "$source_dir/lib/parser.bash" "$install_dir/lib/parser.bash"
 install -m 0644 "$source_dir/lib/layer.bash" "$install_dir/lib/layer.bash"
+install -m 0644 "$source_dir/lib/theme.bash" "$install_dir/lib/theme.bash"
 install -m 0755 "$source_dir/uninstall.sh" "$install_dir/uninstall.sh"
 
 if [[ ! -e $config_home/omarchy-chroma/config.bash ]]; then

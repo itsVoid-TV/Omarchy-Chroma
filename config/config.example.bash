@@ -14,5 +14,10 @@
 # you want ble.sh's suggestions while typing. Tab completion is unaffected.
 # CHROMA_SUGGESTIONS=1
 
+# Omarchy's active theme is followed automatically. Chroma preserves each
+# theme's hue but raises faint colors to this minimum contrast ratio.
+# CHROMA_THEME_INTEGRATION=1
+# CHROMA_MIN_CONTRAST=5.5
+
 # Set to 0 only if you intentionally manage fzf/ble.sh integration yourself.
 # CHROMA_FZF_INTEGRATION=0

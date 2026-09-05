@@ -1,10 +1,18 @@
 # Omarchy Chroma
 
-Semantic command colors for the stock **Omarchy Bash terminal**.
+Theme-aware semantic command colors for the stock **Omarchy Bash terminal**.
 
 Chroma colors what a command *does* while you type it. Package installation is yellow, removal is red, privileged wrappers are orange, Git is purple, network commands are cyan, and destructive commands are bright red and underlined.
 
-It works in Foot, Ghostty, Alacritty, Kitty, and other 256-color terminals because the feature lives in Bash rather than in one terminal emulator.
+Chroma follows Omarchy's active `colors.toml`. It keeps each theme's own hues,
+but raises faint colors until they reach at least **5.5:1 contrast** against the
+terminal background. A black theme therefore gets light foreground colors; a
+light theme gets dark ones. Theme changes are picked up at the next prompt.
+
+It works in Foot, Ghostty, Alacritty, Kitty, and other compatible terminals
+because the feature lives in Bash rather than in one terminal emulator.
+`ble.sh` emits exact 24-bit color where supported and falls back to indexed
+terminal color otherwise.
 
 ## Install
 
@@ -34,7 +42,7 @@ cd omarchy-chroma
 
 ## Colors
 
-| Meaning | Default style | Examples |
+| Meaning | Omarchy theme role | Examples |
 |---|---|---|
 | Install / update | Yellow, bold | `pacman -Syu`, `flatpak install`, `npm install` |
 | Remove | Coral red, bold | `pacman -Rns`, `flatpak uninstall`, `docker rm` |
@@ -77,6 +85,17 @@ CHROMA_EXTRA_REMOVE_COMMANDS+=(my-uninstaller)
 CHROMA_EXTRA_DANGER_COMMANDS+=(my-disk-wiper)
 ```
 
+Explicit `CHROMA_STYLES[...]` values always win and are not changed by the
+contrast guard. To tune the automatic theme integration instead:
+
+```bash
+# Enabled by default:
+CHROMA_THEME_INTEGRATION=1
+
+# Default: 5.5 (WCAG's normal-text baseline is 4.5):
+CHROMA_MIN_CONTRAST=5.5
+```
+
 Open a new terminal after changing the configuration.
 
 ## Update
@@ -105,6 +124,21 @@ Run:
 chroma doctor
 ```
 
+The report should show your Omarchy theme, its exact background color, and a
+`worst contrast` of at least `5.500`. After changing a theme manually, force an
+immediate refresh with:
+
+```bash
+chroma reload
+```
+
+If an older Chroma version is still loaded after an update, replace the current
+interactive Bash process once:
+
+```bash
+exec bash
+```
+
 If Bash input ever behaves incorrectly, open a clean recovery shell with:
 
 ```bash
@@ -117,6 +151,8 @@ Chroma is a visual hint, not a security boundary. It never blocks a command, and
 
 ## Design and privacy
 
+- Reads `~/.local/state/omarchy/current/theme/colors.toml` as data; the theme
+  file is never sourced or executed.
 - Built for Omarchy's current Bash initialization; it does not switch your login shell.
 - Adds a semantic layer after `ble.sh`'s normal syntax/error highlighting.
 - Uses `ble.sh`'s fzf adapter so Omarchy's completion and history bindings keep working.
@@ -132,7 +168,11 @@ The approach follows the current [Omarchy Bash configuration](https://github.com
 bash tests/run.bash
 ```
 
-The suite covers semantic parsing, shell wrappers, operators, quotes, redirections, comments, fresh installation, idempotent update, config preservation, uninstall, ShellCheck, and a render test against the exact pinned `ble.sh` build.
+The suite covers semantic parsing, shell wrappers, operators, quotes,
+redirections, comments, fresh installation, idempotent update, config
+preservation, uninstall, and ShellCheck. It also audits all 22 themes from the
+pinned Omarchy revision and checks the actual RGB/ANSI render from the pinned
+`ble.sh` build in pseudo-terminals using both Vantablack and White.
 
 ## License
 

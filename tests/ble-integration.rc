@@ -17,6 +17,15 @@ source "$CHROMA_TEST_ROOT/chromarchy.bash" || chroma_test_fail 'Chroma loader fa
   chroma_test_fail 'automatic suggestions are still enabled'
 [[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]] ||
   chroma_test_fail 'semantic layer was not registered'
+[[ " ${_ble_hook_h_PRECMD[*]} " == *' chromarchy::theme_refresh '* ]] ||
+  chroma_test_fail 'theme refresh hook was not registered'
+[[ ${CHROMA_THEME_SOURCE:-} == omarchy ]] || chroma_test_fail 'Omarchy theme was not loaded'
+[[ ${CHROMA_THEME_NAME:-} == "$CHROMA_EXPECTED_THEME" ]] ||
+  chroma_test_fail "wrong theme name: ${CHROMA_THEME_NAME:-missing}"
+[[ ${CHROMA_THEME_BACKGROUND:-} == "$CHROMA_EXPECTED_BACKGROUND" ]] ||
+  chroma_test_fail "wrong theme background: ${CHROMA_THEME_BACKGROUND:-missing}"
+[[ ${CHROMA_STYLES[install]:-} == "fg=$CHROMA_EXPECTED_INSTALL,bold" ]] ||
+  chroma_test_fail "wrong install style: ${CHROMA_STYLES[install]:-missing}"
 
 ble/highlight/layer/update 'sudo pacman -Syu firefox' || chroma_test_fail 'render update failed'
 [[ ${_ble_highlight_layer_omarchy_chroma_osel[*]} == '0 4 5 11 12 16' ]] ||
@@ -24,5 +33,47 @@ ble/highlight/layer/update 'sudo pacman -Syu firefox' || chroma_test_fail 'rende
 [[ ${#_ble_highlight_layer_omarchy_chroma_ogflags[@]} == 3 ]] ||
   chroma_test_fail 'wrong number of graphic styles'
 
-printf 'ok - real ble.sh layer registration and render\n'
+ble/color/gspec2g "${CHROMA_STYLES[install]}"
+expected_install_g=$ret
+[[ ${_ble_highlight_layer_omarchy_chroma_ogflags[1]} == "$expected_install_g" &&
+   ${_ble_highlight_layer_omarchy_chroma_ogflags[2]} == "$expected_install_g" ]] ||
+  chroma_test_fail 'install style did not reach the render layer'
+
+g=
+ble/highlight/layer:omarchy_chroma/getg 5
+[[ $g == "$expected_install_g" ]] || chroma_test_fail 'final layer lookup lost the install style'
+
+ble/color/g#getfg "$g" || chroma_test_fail 'rendered style has no foreground'
+rendered_color=$ret
+((0x1000000 <= rendered_color && rendered_color < 0x2000000)) ||
+  chroma_test_fail "rendered foreground is not truecolor: $rendered_color"
+printf -v rendered_hex '#%06x' "$((rendered_color & 0xffffff))"
+[[ $rendered_hex == "$CHROMA_EXPECTED_INSTALL" ]] ||
+  chroma_test_fail "rendered foreground changed to $rendered_hex"
+[[ $rendered_hex != "$CHROMA_EXPECTED_BACKGROUND" ]] ||
+  chroma_test_fail 'rendered foreground equals the terminal background'
+
+ble/color/g2sgr "$g"
+rendered_sgr=$ret
+[[ $rendered_sgr == *"38;2;$CHROMA_EXPECTED_INSTALL_RGB"* ]] ||
+  chroma_test_fail 'terminal SGR is not the expected truecolor sequence'
+rendered_buffer=$(printf '%s' "${_ble_highlight_layer_omarchy_chroma_buff[@]}")
+[[ $rendered_buffer == *"$rendered_sgr"* ]] ||
+  chroma_test_fail 'truecolor SGR is absent from the composed render buffer'
+
+ble/color/g2sgr-ansi "$g"
+canonical_sgr=$ret
+expected_canonical=${CHROMA_EXPECTED_INSTALL_RGB//;/:}
+[[ $canonical_sgr == *"38:2::$expected_canonical"* ]] ||
+  chroma_test_fail 'canonical ANSI SGR is not the expected RGB color'
+
+doctor_output=$(chromarchy::doctor) || chroma_test_fail 'chroma doctor reported a failure'
+[[ $doctor_output == *"$CHROMA_EXPECTED_THEME"* &&
+   $doctor_output == *"$CHROMA_EXPECTED_BACKGROUND"* &&
+   $doctor_output == *'auto suggestions   disabled'* ]] ||
+  chroma_test_fail 'chroma doctor omitted theme or suggestion diagnostics'
+
+printf 'render-probe %sINSTALL\e[0m on %s\n' "$rendered_sgr" "$CHROMA_EXPECTED_THEME"
+
+printf 'ok - real ble.sh ANSI render: %s\n' "$CHROMA_EXPECTED_THEME"
 exit 0

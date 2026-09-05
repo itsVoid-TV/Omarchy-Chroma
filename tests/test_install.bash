@@ -15,6 +15,7 @@ printf '# existing user config\n' > "$HOME/.bashrc"
 bash "$root/install.sh" --source "$root" >/dev/null
 
 [[ -r $XDG_DATA_HOME/omarchy-chroma/chromarchy.bash ]]
+[[ -r $XDG_DATA_HOME/omarchy-chroma/lib/theme.bash ]]
 [[ -r $XDG_CONFIG_HOME/omarchy-chroma/config.bash ]]
 [[ $(grep -Fc '# >>> omarchy-chroma >>>' "$HOME/.bashrc") == 1 ]]
 grep -Fqx '# existing user config' "$HOME/.bashrc"
@@ -31,4 +32,3 @@ bash "$XDG_DATA_HOME/omarchy-chroma/uninstall.sh" >/dev/null
 grep -Fqx '# existing user config' "$HOME/.bashrc"
 
 printf 'ok - fresh install, idempotent update, config preservation, uninstall\n'
-

@@ -1,0 +1,20 @@
+mode = "dark"
+
+accent = "#242424"
+background = "#101010"
+foreground = "#eeeeee"
+
+red = "#282828"
+yellow = "#303030"
+orange = "#383838"
+green = "#404040"
+cyan = "#484848"
+blue = "#505050"
+magenta = "#585858"
+
+bright_red = "#282828"
+bright_yellow = "#303030"
+bright_green = "#404040"
+bright_cyan = "#484848"
+bright_blue = "#505050"
+bright_magenta = "#585858"

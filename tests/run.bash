@@ -11,13 +11,16 @@ for file in \
   "$root/config/config.example.bash" \
   "$root/lib/parser.bash" \
   "$root/lib/layer.bash" \
+  "$root/lib/theme.bash" \
   "$root/tests/test_parser.bash" \
+  "$root/tests/test_theme.bash" \
   "$root/tests/test_install.bash" \
   "$root/tests/test_ble_integration.bash"; do
   bash -n "$file"
 done
 
 bash "$root/tests/test_parser.bash"
+bash "$root/tests/test_theme.bash"
 bash "$root/tests/test_install.bash"
 
 if [[ ${CHROMA_BLESH_PATH:-} ]]; then
@@ -34,6 +37,7 @@ if command -v shellcheck >/dev/null; then
     "$root/config/defaults.bash" \
     "$root/lib/parser.bash" \
     "$root/lib/layer.bash" \
+    "$root/lib/theme.bash" \
     "$root/tests/"*.bash
 else
   printf 'note: shellcheck not installed; static ShellCheck pass skipped\n'
