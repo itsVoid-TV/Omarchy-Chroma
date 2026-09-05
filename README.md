@@ -19,6 +19,9 @@ chroma doctor
 chroma legend
 ```
 
+Automatic ghost-text suggestions are disabled. Normal Tab completion and
+Omarchy's completion/history shortcuts remain available.
+
 The installer uses only user-owned XDG directories, adds one marked block to `~/.bashrc`, and does **not** call `sudo`. If `ble.sh` is missing, it downloads one pinned build and verifies its SHA-256 checksum before installing it locally.
 
 Prefer reviewing before running? Clone the repository first:
@@ -65,6 +68,9 @@ Examples:
 ```bash
 CHROMA_STYLES[install]='fg=yellow,bold'
 CHROMA_STYLES[danger]='fg=white,bg=red,bold'
+
+# Opt in only if you want ble.sh's automatic ghost-text suggestions:
+CHROMA_SUGGESTIONS=1
 
 CHROMA_EXTRA_INSTALL_COMMANDS+=(my-installer)
 CHROMA_EXTRA_REMOVE_COMMANDS+=(my-uninstaller)

@@ -9,12 +9,12 @@ chroma_test_fail() {
 [[ -r ${CHROMA_TEST_ROOT:-}/lib/layer.bash ]] || chroma_test_fail 'test root is invalid'
 
 source "$CHROMA_BLESH_PATH" --attach=none || chroma_test_fail 'ble.sh failed to load'
-source "$CHROMA_TEST_ROOT/config/defaults.bash" || chroma_test_fail 'defaults failed to load'
-source "$CHROMA_TEST_ROOT/lib/parser.bash" || chroma_test_fail 'parser failed to load'
-source "$CHROMA_TEST_ROOT/lib/layer.bash" || chroma_test_fail 'layer failed to load'
+source "$CHROMA_TEST_ROOT/chromarchy.bash" || chroma_test_fail 'Chroma loader failed'
 
 [[ ${BLE_VERSION:-} ]] || chroma_test_fail 'BLE_VERSION is empty'
 [[ ${CHROMA_LAYER_READY:-0} == 1 ]] || chroma_test_fail 'semantic layer is not ready'
+[[ ! ${bleopt_complete_auto_complete:-} ]] ||
+  chroma_test_fail 'automatic suggestions are still enabled'
 [[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]] ||
   chroma_test_fail 'semantic layer was not registered'
 
@@ -26,4 +26,3 @@ ble/highlight/layer/update 'sudo pacman -Syu firefox' || chroma_test_fail 'rende
 
 printf 'ok - real ble.sh layer registration and render\n'
 exit 0
-

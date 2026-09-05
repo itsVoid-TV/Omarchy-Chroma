@@ -26,3 +26,7 @@ declare -p CHROMA_EXTRA_DANGER_COMMANDS &>/dev/null || declare -ga CHROMA_EXTRA_
 # Omarchy loads fzf's Readline integration before user additions in .bashrc.
 # ble.sh's own adapter keeps Ctrl-R/completion working after it takes over.
 : "${CHROMA_FZF_INTEGRATION:=1}"
+
+# Keep regular Tab completion, but do not show ble.sh's automatic ghost-text
+# suggestions unless the user explicitly opts in.
+: "${CHROMA_SUGGESTIONS:=0}"

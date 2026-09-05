@@ -9,7 +9,7 @@ if ((BASH_VERSINFO[0] < 4 || BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4)); th
 fi
 
 CHROMA_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-CHROMA_VERSION=0.1.0
+CHROMA_VERSION=0.1.1
 _chromarchy_should_attach=0
 
 if [[ ! ${BLE_VERSION:-} ]]; then
@@ -38,6 +38,13 @@ _chromarchy_config=${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-chroma/config.bash
 # shellcheck disable=SC1090 # intentionally user-configurable path
 [[ ! -r $_chromarchy_config ]] || source "$_chromarchy_config"
 
+# ble.sh enables fish-like automatic suggestions by default. Chroma only needs
+# its highlighting engine, so leave normal Tab completion intact and disable
+# automatic ghost text unless it was explicitly requested in the user config.
+if [[ $CHROMA_SUGGESTIONS != 1 ]]; then
+  bleopt complete_auto_complete=
+fi
+
 if [[ $CHROMA_FZF_INTEGRATION == 1 ]] && command -v fzf &>/dev/null; then
   ble-import -d integration/fzf-completion
   ble-import -d integration/fzf-key-bindings
@@ -59,6 +66,7 @@ chromarchy::legend() {
 
 chromarchy::doctor() {
   local failures=0 data_home=${XDG_DATA_HOME:-$HOME/.local/share}
+  local layer_status='NOT REGISTERED' suggestions='disabled'
   printf 'Omarchy Chroma %s\n' "$CHROMA_VERSION"
   printf '  %-18s %s\n' 'Bash' "${BASH_VERSION:-missing}"
   if [[ ${BLE_VERSION:-} ]]; then
@@ -73,6 +81,16 @@ chromarchy::doctor() {
     printf '  %-18s %s\n' 'semantic layer' 'NOT READY'
     ((failures++))
   fi
+  # shellcheck disable=SC2154 # provided by ble.sh
+  if declare -p _ble_highlight_layer_list &>/dev/null &&
+     [[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]]; then
+    layer_status=registered
+  else
+    ((failures++))
+  fi
+  printf '  %-18s %s\n' 'render layer' "$layer_status"
+  [[ $CHROMA_SUGGESTIONS == 1 ]] && suggestions=enabled
+  printf '  %-18s %s\n' 'auto suggestions' "$suggestions"
   if [[ -r $data_home/omarchy-chroma/chromarchy.bash ]]; then
     printf '  %-18s %s\n' 'installation' "$data_home/omarchy-chroma"
   else
