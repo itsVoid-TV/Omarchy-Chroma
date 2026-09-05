@@ -46,7 +46,9 @@ done
 command -v git >/dev/null || die 'git is required'
 
 if [[ ! $source_dir ]]; then
-  script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P || true)
+  if ! script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P); then
+    script_dir=
+  fi
   if [[ -r $script_dir/chromarchy.bash && -r $script_dir/lib/parser.bash ]]; then
     source_dir=$script_dir
   else
