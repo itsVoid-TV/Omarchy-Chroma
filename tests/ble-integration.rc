@@ -1,0 +1,29 @@
+# This file is loaded by an actual interactive Bash under a pseudo-terminal.
+
+chroma_test_fail() {
+  printf 'not ok - ble.sh integration: %s\n' "$1"
+  exit 1
+}
+
+[[ -r ${CHROMA_BLESH_PATH:-} ]] || chroma_test_fail 'BLESH_PATH is unreadable'
+[[ -r ${CHROMA_TEST_ROOT:-}/lib/layer.bash ]] || chroma_test_fail 'test root is invalid'
+
+source "$CHROMA_BLESH_PATH" --attach=none || chroma_test_fail 'ble.sh failed to load'
+source "$CHROMA_TEST_ROOT/config/defaults.bash" || chroma_test_fail 'defaults failed to load'
+source "$CHROMA_TEST_ROOT/lib/parser.bash" || chroma_test_fail 'parser failed to load'
+source "$CHROMA_TEST_ROOT/lib/layer.bash" || chroma_test_fail 'layer failed to load'
+
+[[ ${BLE_VERSION:-} ]] || chroma_test_fail 'BLE_VERSION is empty'
+[[ ${CHROMA_LAYER_READY:-0} == 1 ]] || chroma_test_fail 'semantic layer is not ready'
+[[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]] ||
+  chroma_test_fail 'semantic layer was not registered'
+
+ble/highlight/layer/update 'sudo pacman -Syu firefox' || chroma_test_fail 'render update failed'
+[[ ${_ble_highlight_layer_omarchy_chroma_osel[*]} == '0 4 5 11 12 16' ]] ||
+  chroma_test_fail "wrong render spans: ${_ble_highlight_layer_omarchy_chroma_osel[*]}"
+[[ ${#_ble_highlight_layer_omarchy_chroma_ogflags[@]} == 3 ]] ||
+  chroma_test_fail 'wrong number of graphic styles'
+
+printf 'ok - real ble.sh layer registration and render\n'
+exit 0
+

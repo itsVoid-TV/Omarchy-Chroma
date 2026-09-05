@@ -1,0 +1,28 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Download pinned ble.sh
+        run: |
+          curl --fail --location --silent --show-error \
+            'https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly-20260818%2B63c23e9.tar.xz' \
+            --output /tmp/blesh.tar.xz
+          echo 'f033df78cbe6017b2bc8286852f9e4edd18fbddf0025faf19967726e06577189  /tmp/blesh.tar.xz' | sha256sum --check
+          mkdir -p /tmp/blesh
+          tar --no-same-owner -xJf /tmp/blesh.tar.xz -C /tmp/blesh --strip-components=1
+      - name: Run tests
+        env:
+          CHROMA_BLESH_PATH: /tmp/blesh/ble.sh
+        run: bash tests/run.bash
