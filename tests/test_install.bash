@@ -56,6 +56,7 @@ bash "$XDG_DATA_HOME/omarchy-chroma/uninstall.sh" >/dev/null
 ! grep -Fq '# >>> omarchy-chroma >>>' "$HOME/.bashrc"
 grep -Fqx '# existing user config' "$HOME/.bashrc"
 
+# shellcheck disable=SC2030,SC2031 # each fixture intentionally has a subshell-local HOME
 (
   export HOME=$fixture/malformed-home
   export XDG_DATA_HOME=$HOME/.local/share
@@ -82,6 +83,7 @@ grep -Fqx '# existing user config' "$HOME/.bashrc"
   [[ $(grep -Fc '# >>> omarchy-chroma >>>' "$HOME/.bashrc") == 1 ]]
 )
 
+# shellcheck disable=SC2030,SC2031 # each fixture intentionally has a subshell-local HOME
 (
   export HOME=$fixture/duplicate-home
   export XDG_DATA_HOME=$HOME/.local/share
@@ -104,6 +106,7 @@ grep -Fqx '# existing user config' "$HOME/.bashrc"
   ! grep -Fq 'old loader' "$HOME/.bashrc"
 )
 
+# shellcheck disable=SC2030,SC2031 # each fixture intentionally has a subshell-local HOME
 (
   export HOME=$fixture/transaction-home
   export XDG_DATA_HOME=$HOME/.local/share
@@ -122,6 +125,7 @@ grep -Fqx '# existing user config' "$HOME/.bashrc"
   [[ $before == "$after" ]]
 )
 
+# shellcheck disable=SC2030,SC2031 # each fixture intentionally has a subshell-local HOME
 (
   export HOME=$fixture/symlink-home
   export XDG_DATA_HOME=$HOME/.local/share

@@ -11,8 +11,10 @@ CHROMA_BLE_ERROR_FEEDBACK=2
 CHROMA_THEME_INTEGRATION=no
 CHROMA_MIN_CONTRAST=99.5
 unset CHROMA_STYLES
+# shellcheck disable=SC2190 # deliberately replace an associative array with the wrong type
 declare -ga CHROMA_STYLES=(not-an-associative-array)
 unset CHROMA_EXTRA_DANGER_COMMANDS
+# shellcheck disable=SC2178 # deliberately replace an indexed array with a scalar
 declare -g CHROMA_EXTRA_DANGER_COMMANDS=not-an-array
 
 chromarchy::validate_config
@@ -23,7 +25,7 @@ chromarchy::validate_config
 [[ $CHROMA_THEME_INTEGRATION == 1 ]]
 [[ $CHROMA_MIN_CONTRAST == 21 ]]
 [[ $(declare -p CHROMA_STYLES) == 'declare -A '* ]]
-[[ ${CHROMA_STYLES[danger]} == ${CHROMA_BUILTIN_STYLES[danger]} ]]
+[[ ${CHROMA_STYLES[danger]} == "${CHROMA_BUILTIN_STYLES[danger]}" ]]
 [[ $(declare -p CHROMA_EXTRA_DANGER_COMMANDS) == 'declare -a '* ]]
 ((${#CHROMA_CONFIG_WARNINGS[@]} >= 7))
 
