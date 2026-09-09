@@ -12,6 +12,7 @@ for file in \
   "$root/lib/parser.bash" \
   "$root/lib/layer.bash" \
   "$root/lib/theme.bash" \
+  "$root/tests/test_config.bash" \
   "$root/tests/test_parser.bash" \
   "$root/tests/test_theme.bash" \
   "$root/tests/test_install.bash" \
@@ -19,6 +20,7 @@ for file in \
   bash -n "$file"
 done
 
+bash "$root/tests/test_config.bash"
 bash "$root/tests/test_parser.bash"
 bash "$root/tests/test_theme.bash"
 bash "$root/tests/test_install.bash"

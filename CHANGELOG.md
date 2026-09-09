@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0 — 2026-09-09
+
+- Add `chroma explain` for inspecting token categories and source ranges
+  without executing the command.
+- Distinguish command lookups such as `command -v rm` from execution, keep
+  render spans ordered, and understand option-bearing `env`, `exec`, `time`,
+  `nice`, `stdbuf`, `ionice`, `taskset`, and `chrt` wrappers.
+- Recognize forced Git pushes, forced branch deletion, power-state actions,
+  additional disk tools, Pipx actions, and modern Nix subcommands.
+- Validate user toggles, arrays, styles, and contrast values; expose any
+  recoveries through the expanded `chroma doctor` report.
+- Make theme reload failures actionable and include every semantic category in
+  the interactive legend.
+- Stage and atomically activate installations, preserve symlinked `.bashrc`
+  files, detect system ble.sh under `/usr/local`, and require Git only when a
+  repository clone is actually needed.
+- Prevent malformed loader markers from deleting unrelated `.bashrc` content
+  during an update or uninstall, while normalizing duplicate complete blocks.
+- Expand regression coverage for parsing, config recovery, theme reload,
+  rollback, loader-marker corruption, and symlink-safe lifecycle operations.
+- Pin the GitHub Actions checkout step to a reviewed commit.
+
 ## 0.2.1 — 2026-09-05
 
 - Resolve the installation directory with Bash built-ins so Omarchy's

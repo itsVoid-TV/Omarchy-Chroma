@@ -12,7 +12,7 @@ CHROMA_ROOT=$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && builtin pwd -
   printf 'Omarchy Chroma: could not resolve its installation directory.\n' >&2
   return 1
 }
-CHROMA_VERSION=0.2.1
+CHROMA_VERSION=0.3.0
 _chromarchy_should_attach=0
 
 for _chromarchy_required in \
@@ -54,6 +54,7 @@ source "$CHROMA_ROOT/config/defaults.bash"
 _chromarchy_config=${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-chroma/config.bash
 # shellcheck disable=SC1090 # intentionally user-configurable path
 [[ ! -r $_chromarchy_config ]] || source "$_chromarchy_config"
+chromarchy::validate_config
 source "$CHROMA_ROOT/lib/theme.bash"
 chromarchy::theme_apply
 
@@ -106,32 +107,38 @@ chromarchy::legend() {
   chromarchy::legend_line network NETWORK 'curl, wget, ssh, rsync'
   chromarchy::legend_line container CONTAINER 'docker, podman, kubectl'
   chromarchy::legend_line build BUILD 'make, cargo, go, cmake'
+  chromarchy::legend_line navigate NAVIGATE 'cd, ls, zoxide'
+  chromarchy::legend_line inspect INSPECT 'cat, ps, command -v'
+  chromarchy::legend_line search SEARCH 'rg, find, fzf'
+  chromarchy::legend_line editor EDITOR 'nvim, vim, helix'
   printf '\n'
 }
 
 chromarchy::doctor() {
   local failures=0 data_home=${XDG_DATA_HOME:-$HOME/.local/share}
   local layer_status='NOT REGISTERED' suggestions='disabled' error_feedback='disabled' theme_status
+  local bashrc_file=${CHROMA_BASHRC:-$HOME/.bashrc} line warning
+  local start_count=0 end_count=0
   printf 'Omarchy Chroma %s\n' "$CHROMA_VERSION"
   printf '  %-18s %s\n' 'Bash' "${BASH_VERSION:-missing}"
   if [[ ${BLE_VERSION:-} ]]; then
     printf '  %-18s %s\n' 'ble.sh' "$BLE_VERSION"
   else
     printf '  %-18s %s\n' 'ble.sh' 'NOT LOADED'
-    ((failures++))
+    ((++failures))
   fi
   if [[ ${CHROMA_LAYER_READY:-0} == 1 ]]; then
     printf '  %-18s %s\n' 'semantic layer' 'ready'
   else
     printf '  %-18s %s\n' 'semantic layer' 'NOT READY'
-    ((failures++))
+    ((++failures))
   fi
   # shellcheck disable=SC2154 # provided by ble.sh
   if declare -p _ble_highlight_layer_list &>/dev/null &&
      [[ " ${_ble_highlight_layer_list[*]} " == *' omarchy_chroma '* ]]; then
     layer_status=registered
   else
-    ((failures++))
+    ((++failures))
   fi
   printf '  %-18s %s\n' 'render layer' "$layer_status"
   [[ $CHROMA_SUGGESTIONS == 1 ]] && suggestions=enabled
@@ -145,6 +152,38 @@ chromarchy::doctor() {
   printf '  %-18s %s\n' 'theme colors' "$theme_status"
   printf '  %-18s %s\n' 'theme background' "$CHROMA_THEME_BACKGROUND"
   printf '  %-18s %s\n' 'worst contrast' "$CHROMA_THEME_WORST_CONTRAST"
+  printf '  %-18s %s\n' 'minimum contrast' "$CHROMA_MIN_CONTRAST"
+  if [[ ${CHROMA_THEME_ERROR:-} ]]; then
+    printf '  %-18s %s\n' 'theme error' "$CHROMA_THEME_ERROR"
+    ((++failures))
+  fi
+  if ((${#CHROMA_CONFIG_WARNINGS[@]})); then
+    printf '  %-18s %d warning(s)\n' 'configuration' "${#CHROMA_CONFIG_WARNINGS[@]}"
+    for warning in "${CHROMA_CONFIG_WARNINGS[@]}"; do
+      printf '    - %s\n' "$warning"
+    done
+    ((++failures))
+  else
+    printf '  %-18s %s\n' 'configuration' 'valid'
+  fi
+  if [[ -r $bashrc_file ]]; then
+    while IFS= read -r line || [[ $line ]]; do
+      [[ $line == '# >>> omarchy-chroma >>>' ]] && ((++start_count))
+      [[ $line == '# <<< omarchy-chroma <<<' ]] && ((++end_count))
+    done < "$bashrc_file"
+    if ((start_count == end_count && start_count <= 1)); then
+      if ((start_count == 1)); then
+        printf '  %-18s %s\n' '.bashrc loader' 'managed'
+      else
+        printf '  %-18s %s\n' '.bashrc loader' 'not managed'
+      fi
+    else
+      printf '  %-18s %s\n' '.bashrc loader' "MALFORMED ($start_count start, $end_count end)"
+      ((++failures))
+    fi
+  else
+    printf '  %-18s %s\n' '.bashrc loader' 'not readable'
+  fi
   if [[ -r $data_home/omarchy-chroma/chromarchy.bash ]]; then
     printf '  %-18s %s\n' 'installation' "$data_home/omarchy-chroma"
   else
@@ -159,16 +198,33 @@ chroma() {
     doctor|status) chromarchy::doctor ;;
     reload)
       CHROMA_THEME_SNAPSHOT=
-      chromarchy::theme_refresh
-      printf 'Omarchy Chroma: theme colors reloaded.\n'
+      if chromarchy::theme_reload; then
+        printf 'Omarchy Chroma: theme colors reloaded from %s.\n' "$CHROMA_THEME_PATH"
+      else
+        printf 'Omarchy Chroma: theme reload failed: %s\n' "$CHROMA_THEME_ERROR" >&2
+        return 1
+      fi
+      ;;
+    explain)
+      shift
+      chromarchy::explain "$@"
       ;;
     version|--version|-v) printf 'Omarchy Chroma %s\n' "$CHROMA_VERSION" ;;
     help|--help|-h)
-      printf 'Usage: chroma [legend|doctor|reload|version|help]\n'
+      printf '%s\n' \
+        'Usage: chroma COMMAND [ARGS...]' \
+        '' \
+        'Commands:' \
+        '  legend                 Show semantic colors and examples' \
+        '  doctor                 Diagnose the live shell integration' \
+        '  explain COMMAND...     Explain highlights without running the command' \
+        '  reload                 Reload the active Omarchy theme' \
+        '  version                Print the installed version' \
+        '  help                   Show this help'
       ;;
     *)
       printf 'chroma: unknown command: %s\n' "$1" >&2
-      printf 'Usage: chroma [legend|doctor|reload|version|help]\n' >&2
+      printf 'Run "chroma help" for usage.\n' >&2
       return 2
       ;;
   esac

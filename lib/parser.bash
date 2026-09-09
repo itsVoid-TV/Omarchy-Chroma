@@ -33,7 +33,7 @@ chromarchy::tokenize() {
   while ((i < len)); do
     ch=${text:i:1}
     if [[ $ch == [[:space:]] && $ch != $'\n' ]]; then
-      ((i++))
+      ((++i))
       continue
     fi
 
@@ -49,20 +49,20 @@ chromarchy::tokenize() {
       case $ch$next in
         '&&'|'||'|'|&'|';&'|';;'|'>>'|'<<'|'>&'|'<&'|'<>'|'>|'|'&>')
           op+=$next
-          ((i++))
+          ((++i))
           ;;
       esac
       if [[ $op == ';;' && ${text:i+1:1} == '&' ]]; then
         op+='&'
-        ((i++))
+        ((++i))
       elif [[ $op == '<<' && ${text:i+1:1} == '<' ]]; then
         op+='<'
-        ((i++))
+        ((++i))
       elif [[ $op == '&>' && ${text:i+1:1} == '>' ]]; then
         op+='>'
-        ((i++))
+        ((++i))
       fi
-      ((i++))
+      ((++i))
       chromarchy::push_token "$start" "$i" op "$op"
       continue
     fi
@@ -78,18 +78,18 @@ chromarchy::tokenize() {
         else
           value+=$ch
         fi
-        ((i++))
+        ((++i))
         continue
       elif [[ $quote == '"' ]]; then
         if [[ $ch == '"' ]]; then
           quote=
-          ((i++))
+          ((++i))
         elif [[ $ch == $'\\' ]] && ((i + 1 < len)); then
           value+=${text:i+1:1}
           ((i+=2))
         else
           value+=$ch
-          ((i++))
+          ((++i))
         fi
         continue
       fi
@@ -100,13 +100,13 @@ chromarchy::tokenize() {
         break
       elif [[ $ch == "'" || $ch == '"' ]]; then
         quote=$ch
-        ((i++))
+        ((++i))
       elif [[ $ch == $'\\' ]] && ((i + 1 < len)); then
         value+=${text:i+1:1}
         ((i+=2))
       else
         value+=$ch
-        ((i++))
+        ((++i))
       fi
     done
     chromarchy::push_token "$start" "$i" word "$value"
@@ -130,18 +130,29 @@ chromarchy::is_assignment() {
 
 chromarchy::add_span_token() {
   local token_index=$1 category=$2 i
+  local start end
   [[ $token_index =~ ^[0-9]+$ && -n $category ]] || return 0
+  start=${CHROMA_TOKEN_START[token_index]}
+  end=${CHROMA_TOKEN_END[token_index]}
 
   # One semantic style per token. Later, more specific decisions win.
   for i in "${!CHROMA_SPAN_START[@]}"; do
-    if ((CHROMA_SPAN_START[i] == CHROMA_TOKEN_START[token_index] &&
-         CHROMA_SPAN_END[i] == CHROMA_TOKEN_END[token_index])); then
+    if ((CHROMA_SPAN_START[i] == start && CHROMA_SPAN_END[i] == end)); then
       CHROMA_SPAN_CATEGORY[i]=$category
       return 0
     fi
+    # ble.sh's selection layer consumes ranges from left to right. Keep the
+    # spans ordered even when a nested command (for example, uv pip) is found
+    # before its outer executable is added.
+    if ((start < CHROMA_SPAN_START[i])); then
+      CHROMA_SPAN_START=("${CHROMA_SPAN_START[@]:0:i}" "$start" "${CHROMA_SPAN_START[@]:i}")
+      CHROMA_SPAN_END=("${CHROMA_SPAN_END[@]:0:i}" "$end" "${CHROMA_SPAN_END[@]:i}")
+      CHROMA_SPAN_CATEGORY=("${CHROMA_SPAN_CATEGORY[@]:0:i}" "$category" "${CHROMA_SPAN_CATEGORY[@]:i}")
+      return 0
+    fi
   done
-  CHROMA_SPAN_START+=("${CHROMA_TOKEN_START[token_index]}")
-  CHROMA_SPAN_END+=("${CHROMA_TOKEN_END[token_index]}")
+  CHROMA_SPAN_START+=("$start")
+  CHROMA_SPAN_END+=("$end")
   CHROMA_SPAN_CATEGORY+=("$category")
 }
 
@@ -155,15 +166,30 @@ chromarchy::array_contains() {
 }
 
 chromarchy::find_first_action() {
-  local pos
+  local pos arg
   _chromarchy_action_pos=-1
-  for ((pos=$1; pos<${#_chromarchy_words_val[@]}; pos++)); do
-    [[ ${_chromarchy_words_val[pos]} == -- ]] && continue
-    [[ ${_chromarchy_words_val[pos]} == -* ]] && continue
-    chromarchy::is_assignment "${_chromarchy_words_val[pos]}" && continue
+  pos=$1
+  while ((pos<${#_chromarchy_words_val[@]})); do
+    arg=${_chromarchy_words_val[pos]}
+    case $arg in
+      --) ((++pos)); break ;;
+      -C|-c|-o|--config|--config-file|--root|--installroot|--prefix|--cwd|--dir|--directory|--context|--namespace|--kube-context|--kubeconfig|--cluster|--user|--server|--token|--as|--as-group|--host|--url|--connection|--identity|--registry|--cache|--globalconfig|--userconfig)
+        ((pos+=2))
+        continue
+        ;;
+      -*) ((++pos)); continue ;;
+    esac
+    if chromarchy::is_assignment "$arg"; then
+      ((++pos))
+      continue
+    fi
     _chromarchy_action_pos=$pos
     return 0
   done
+  if ((pos<${#_chromarchy_words_val[@]})); then
+    _chromarchy_action_pos=$pos
+    return 0
+  fi
   return 1
 }
 
@@ -206,7 +232,7 @@ chromarchy::classify_executable() {
         ;;
       omarchy-pkg-add|omarchy-install*) category=install ;;
       omarchy-pkg-remove|omarchy-remove*) category=remove ;;
-      apt|apt-get|dnf|yum|zypper|apk|xbps-install|nix|nix-env|guix|brew)
+      apt|apt-get|dnf|yum|zypper|apk|xbps-install|nix-env|guix|brew)
         chromarchy::find_first_action "$((pos+1))" || true
         action_pos=$_chromarchy_action_pos
         ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
@@ -215,6 +241,29 @@ chromarchy::classify_executable() {
           remove|purge|autoremove|uninstall|erase|delete) category=remove ;;
           *) category=inspect ;;
         esac
+        ;;
+      nix)
+        chromarchy::find_first_action "$((pos+1))" || true
+        action_pos=$_chromarchy_action_pos
+        ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
+        if [[ $action == profile || $action == store ]]; then
+          local nix_group_pos=$action_pos
+          chromarchy::find_first_action "$((action_pos+1))" || true
+          action_pos=$_chromarchy_action_pos
+          ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
+          case $action in
+            install|upgrade) category=install ;;
+            remove|wipe-history|delete) category=remove ;;
+            *) category=inspect ;;
+          esac
+          chromarchy::add_span_token "${_chromarchy_words_idx[nix_group_pos]}" "$category"
+        else
+          case $action in
+            build|develop|flake|run|shell) category=build ;;
+            collect-garbage) category=remove ;;
+            *) category=inspect ;;
+          esac
+        fi
         ;;
       flatpak|snap)
         chromarchy::find_first_action "$((pos+1))" || true
@@ -226,7 +275,18 @@ chromarchy::classify_executable() {
           *) category=inspect ;;
         esac
         ;;
-      npm|pnpm|yarn|bun|pip|pip3|pipx|uv|gem|composer|cargo)
+      pipx)
+        chromarchy::find_first_action "$((pos+1))" || true
+        action_pos=$_chromarchy_action_pos
+        ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
+        case $action in
+          install|inject|upgrade|upgrade-all) category=install ;;
+          uninstall|uninject|uninstall-all) category=remove ;;
+          run|runpip) category=build ;;
+          *) category=inspect ;;
+        esac
+        ;;
+      npm|pnpm|yarn|bun|pip|pip3|uv|gem|composer|cargo)
         chromarchy::find_first_action "$((pos+1))" || true
         action_pos=$_chromarchy_action_pos
         ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
@@ -271,7 +331,7 @@ chromarchy::classify_executable() {
           category=build
         fi
         ;;
-      rm|rmdir|shred|wipefs|dd|fdisk|cfdisk|sfdisk|parted|gdisk|sgdisk|cryptsetup|kill|pkill|killall|reboot|poweroff|halt|shutdown)
+      rm|rmdir|shred|wipefs|blkdiscard|truncate|dd|fdisk|cfdisk|sfdisk|parted|gdisk|sgdisk|cryptsetup|kill|pkill|killall|reboot|poweroff|halt|shutdown)
         category=danger
         ;;
       mkfs|mkfs.*|mkswap) category=danger ;;
@@ -284,6 +344,9 @@ chromarchy::classify_executable() {
         ((action_pos >= 0)) && action=${_chromarchy_words_val[action_pos],,}
         case $action in
           stop|disable|mask|kill) category=remove ;;
+          reboot|poweroff|halt|kexec|suspend|hibernate|hybrid-sleep|suspend-then-hibernate|soft-reboot)
+            category=danger
+            ;;
         esac
         ;;
       git|gh|lazygit|jj|hg|svn)
@@ -298,6 +361,31 @@ chromarchy::classify_executable() {
             ;;
           delete) category=remove ;;
         esac
+        if [[ $base == git && $action == push ]]; then
+          local git_pos git_arg forced_push=0 deleted_push=0
+          for ((git_pos=pos+1; git_pos<${#_chromarchy_words_val[@]}; git_pos++)); do
+            git_arg=${_chromarchy_words_val[git_pos],,}
+            case $git_arg in
+              --force|--force=*|--force-with-lease|--force-with-lease=*|--mirror) forced_push=1 ;;
+              --delete) deleted_push=1 ;;
+            esac
+          done
+          if ((forced_push)); then
+            category=danger
+          elif ((deleted_push)); then
+            category=remove
+          fi
+        elif [[ $base == git && $action == branch ]]; then
+          local branch_pos branch_arg
+          for ((branch_pos=pos+1; branch_pos<${#_chromarchy_words_val[@]}; branch_pos++)); do
+            branch_arg=${_chromarchy_words_val[branch_pos]}
+            if [[ $branch_arg == -D || $branch_arg == --force ]]; then
+              category=danger
+            elif [[ $branch_arg == -d || $branch_arg == --delete ]] && [[ $category != danger ]]; then
+              category=remove
+            fi
+          done
+        fi
         if chromarchy::find_word delete "$((pos+1))"; then
           category=remove
           action_pos=$_chromarchy_found_pos
@@ -325,8 +413,14 @@ chromarchy::classify_executable() {
       cd|pushd|popd|dirs|pwd|ls|eza|exa|tree|zoxide|z)
         category=navigate
         ;;
-      cat|bat|batcat|less|more|head|tail|file|stat|du|df|free|lsblk|lspci|lsusb|uname|hostnamectl|ps|top|btop|htop|fastfetch|neofetch)
+      cat|bat|batcat|less|more|head|tail|file|stat|du|df|free|lsblk|lspci|lsusb|uname|hostnamectl|ps|top|btop|htop|fastfetch|neofetch|type|hash|help|compgen|complete|declare|typeset|set|shopt)
         category=inspect
+        case $base in
+          type|hash|help)
+            chromarchy::find_first_action "$((pos+1))" || true
+            action_pos=$_chromarchy_action_pos
+            ;;
+        esac
         ;;
       rg|grep|egrep|fgrep|find|fd|locate|fzf|which|whereis|whatis|apropos)
         category=search
@@ -353,11 +447,15 @@ chromarchy::classify_executable() {
 
   [[ -n $category ]] || return 0
   chromarchy::add_span_token "${_chromarchy_words_idx[pos]}" "$category"
-  ((action_pos >= 0)) && chromarchy::add_span_token "${_chromarchy_words_idx[action_pos]}" "$category"
+  if ((action_pos >= 0)); then
+    chromarchy::add_span_token "${_chromarchy_words_idx[action_pos]}" "$category"
+  fi
+  return 0
 }
 
 chromarchy::unwrap_command() {
   local pos=$1 count=${#_chromarchy_words_val[@]} base arg
+  local command_pos command_query process_target wrapper_query
   _chromarchy_unwrapped_pos=$pos
 
   while ((pos < count)); do
@@ -366,52 +464,188 @@ chromarchy::unwrap_command() {
     case $base in
       sudo|doas|pkexec)
         chromarchy::add_span_token "${_chromarchy_words_idx[pos]}" privilege
-        ((pos++))
+        wrapper_query=0
+        ((++pos))
         while ((pos < count)); do
           arg=${_chromarchy_words_val[pos]}
+          if [[ $arg == --help || $arg == --version ||
+                $base == sudo && ( $arg == -v || $arg == --validate ||
+                                   $arg == -l || $arg == --list ||
+                                   $arg == -K || $arg == --remove-timestamp ) ||
+                $base == doas && $arg == -C ]]; then
+            wrapper_query=1
+          fi
           case $arg in
-            --) ((pos++)); break ;;
+            --) ((++pos)); break ;;
             -u|-g|-h|-p|-C|-T|-R|-D|--user|--group|--host|--prompt|--close-from|--command-timeout|--chroot|--chdir)
               ((pos+=2)) ;;
             --user=*|--group=*|--host=*|--prompt=*|--close-from=*|--command-timeout=*|--chroot=*|--chdir=*|-*)
-              ((pos++)) ;;
+              ((++pos)) ;;
             *) break ;;
           esac
         done
-        while ((pos < count)) && chromarchy::is_assignment "${_chromarchy_words_val[pos]}"; do ((pos++)); done
+        while ((pos < count)) && chromarchy::is_assignment "${_chromarchy_words_val[pos]}"; do ((++pos)); done
+        ((wrapper_query)) && pos=$count
         ;;
       env)
-        ((pos++))
+        ((++pos))
         while ((pos < count)); do
           arg=${_chromarchy_words_val[pos]}
-          if [[ $arg == -- ]]; then ((pos++)); break
-          elif [[ $arg == -* ]] || chromarchy::is_assignment "$arg"; then ((pos++))
-          else break
-          fi
+          case $arg in
+            --) ((++pos)); break ;;
+            -u|-C|-a|--unset|--chdir|--argv0) ((pos+=2)) ;;
+            -S|--split-string)
+              # The next token is a complete command line interpreted by env.
+              # Guessing inside it would create misleading danger highlights.
+              pos=$count
+              ;;
+            --unset=*|--chdir=*|--argv0=*|-u?*|-C?*|-a?*|-*) ((++pos)) ;;
+            *)
+              if chromarchy::is_assignment "$arg"; then
+                ((++pos))
+              else
+                break
+              fi
+              ;;
+          esac
         done
         ;;
-      command|builtin|exec|nohup|setsid)
-        ((pos++))
-        while ((pos < count)) && [[ ${_chromarchy_words_val[pos]} == -* ]]; do ((pos++)); done
+      command)
+        command_pos=$pos
+        ((++pos))
+        command_query=0
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -v|-V) command_query=1; ((++pos)) ;;
+            -p) ((++pos)) ;;
+            -*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        if ((command_query)); then
+          chromarchy::add_span_token "${_chromarchy_words_idx[command_pos]}" inspect
+          while ((pos < count)); do
+            [[ ${_chromarchy_words_val[pos]} == -* ]] ||
+              chromarchy::add_span_token "${_chromarchy_words_idx[pos]}" inspect
+            ((++pos))
+          done
+        fi
         ;;
-      time|!) ((pos++)) ;;
+      exec)
+        ((++pos))
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -a) ((pos+=2)) ;;
+            -a?*|-*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      builtin|nohup|setsid)
+        ((++pos))
+        while ((pos < count)) && [[ ${_chromarchy_words_val[pos]} == -* ]]; do
+          [[ ${_chromarchy_words_val[pos]} == -- ]] && { ((++pos)); break; }
+          ((++pos))
+        done
+        ;;
+      time)
+        ((++pos))
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -f|-o|--format|--output) ((pos+=2)) ;;
+            -*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      !) ((++pos)) ;;
       timeout)
-        ((pos++))
+        ((++pos))
         while ((pos < count)) && [[ ${_chromarchy_words_val[pos]} == -* ]]; do
           case ${_chromarchy_words_val[pos]} in
             -k|--kill-after|-s|--signal) ((pos+=2)) ;;
-            *) ((pos++)) ;;
+            *) ((++pos)) ;;
           esac
         done
-        ((pos < count)) && ((pos++)) # duration
+        ((pos < count)) && ((++pos)) # duration
         ;;
       nice)
-        ((pos++))
-        if ((pos < count)) && [[ ${_chromarchy_words_val[pos]} == -n ]]; then ((pos+=2)); fi
-        while ((pos < count)) && [[ ${_chromarchy_words_val[pos]} == -* ]]; do ((pos++)); done
+        ((++pos))
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -n|--adjustment) ((pos+=2)) ;;
+            -n?*|--adjustment=*|-*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      stdbuf)
+        ((++pos))
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -i|-o|-e|--input|--output|--error) ((pos+=2)) ;;
+            -i?*|-o?*|-e?*|--input=*|--output=*|--error=*|-*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      ionice)
+        ((++pos))
+        process_target=0
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -p|-P|-u|--pid|--pgid|--uid) process_target=1; ((pos+=2)) ;;
+            --pid=*|--pgid=*|--uid=*) process_target=1; ((++pos)) ;;
+            -c|-n|--class|--classdata) ((pos+=2)) ;;
+            --class=*|--classdata=*|-*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        ((process_target)) && pos=$count
+        ;;
+      taskset)
+        ((++pos))
+        process_target=0
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -p|--pid) process_target=1; ((++pos)) ;;
+            -*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        if ((process_target)); then
+          pos=$count
+        else
+          ((pos < count)) && ((++pos)) # CPU mask/list
+        fi
+        ;;
+      chrt)
+        ((++pos))
+        process_target=0
+        while ((pos < count)); do
+          case ${_chromarchy_words_val[pos]} in
+            --) ((++pos)); break ;;
+            -p|--pid|-m|--max) process_target=1; ((++pos)) ;;
+            -T|-P|-D|--sched-runtime|--sched-period|--sched-deadline) ((pos+=2)) ;;
+            --sched-runtime=*|--sched-period=*|--sched-deadline=*|-*) ((++pos)) ;;
+            *) break ;;
+          esac
+        done
+        if ((process_target)); then
+          pos=$count
+        else
+          ((pos < count)) && ((++pos)) # scheduling priority
+        fi
         ;;
       if|then|elif|else|while|until|do|coproc)
-        ((pos++))
+        ((++pos))
         ;;
       *) break ;;
     esac
@@ -474,4 +708,25 @@ chromarchy::classify_line() {
     fi
   done
   chromarchy::classify_range "$segment_start" "$count"
+}
+
+chromarchy::explain() {
+  local text=$* i token range
+  if [[ ! $text ]]; then
+    printf 'chroma explain: provide a command line to inspect.\n' >&2
+    return 2
+  fi
+
+  chromarchy::classify_line "$text"
+  if ((${#CHROMA_SPAN_START[@]} == 0)); then
+    printf 'No semantic highlights for: %q\n' "$text"
+    return 0
+  fi
+
+  printf '%-12s %-11s %s\n' CATEGORY RANGE TOKEN
+  for i in "${!CHROMA_SPAN_START[@]}"; do
+    token=${text:CHROMA_SPAN_START[i]:CHROMA_SPAN_END[i]-CHROMA_SPAN_START[i]}
+    range="${CHROMA_SPAN_START[i]}..${CHROMA_SPAN_END[i]}"
+    printf '%-12s %-11s %q\n' "${CHROMA_SPAN_CATEGORY[i]}" "$range" "$token"
+  done
 }

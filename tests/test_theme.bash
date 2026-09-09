@@ -65,6 +65,8 @@ reset_theme() {
   CHROMA_THEME_WORST_CONTRAST=unknown
   CHROMA_THEME_PATH=
   CHROMA_THEME_SNAPSHOT=
+  CHROMA_THEME_ERROR=
+  CHROMA_THEME_APPLIED=0
   CHROMA_THEME_INTEGRATION=1
   CHROMA_MIN_CONTRAST=5.5
   unset CHROMA_THEME_FILE
@@ -181,6 +183,22 @@ expect_equal 'current Omarchy state path is discovered automatically' \
 expect_equal 'auto-discovered black theme stays readable' \
   "${CHROMA_STYLES[install]}" 'fg=#cecece,bold'
 HOME=$saved_home
+
+reset_theme
+CHROMA_THEME_FILE=$fixtures/vantablack/colors.toml
+if chromarchy::theme_reload && [[ $CHROMA_THEME_APPLIED == 1 ]]; then
+  pass 'explicit theme reload reports success for a valid palette'
+else
+  fail 'explicit theme reload reports success for a valid palette' "$CHROMA_THEME_ERROR"
+fi
+
+reset_theme
+CHROMA_THEME_FILE=$state/missing/colors.toml
+if ! chromarchy::theme_reload && [[ $CHROMA_THEME_ERROR == *'no readable'* ]]; then
+  pass 'explicit theme reload explains a missing palette'
+else
+  fail 'explicit theme reload explains a missing palette' "$CHROMA_THEME_ERROR"
+fi
 
 reset_theme
 CHROMA_THEME_INTEGRATION=0

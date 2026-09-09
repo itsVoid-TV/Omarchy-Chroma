@@ -59,6 +59,16 @@ ble/color/face2g argument_error
 [[ ${CHROMA_STYLES[install]:-} == "fg=$CHROMA_EXPECTED_INSTALL,bold" ]] ||
   chroma_test_fail "wrong install style: ${CHROMA_STYLES[install]:-missing}"
 
+explain_output=$(chroma explain 'command -v rm') ||
+  chroma_test_fail 'chroma explain returned an error'
+[[ $explain_output == *'command'* && $explain_output == *'rm'* &&
+   $explain_output == *'inspect'* ]] ||
+  chroma_test_fail 'chroma explain omitted the query classification'
+
+reload_output=$(chroma reload) || chroma_test_fail 'chroma reload rejected a valid theme'
+[[ $reload_output == *"$CHROMA_THEME_FILE"* ]] ||
+  chroma_test_fail 'chroma reload omitted the active theme path'
+
 ble/highlight/layer/update 'sudo pacman -Syu firefox' || chroma_test_fail 'render update failed'
 [[ ${_ble_highlight_layer_omarchy_chroma_osel[*]} == '0 4 5 11 12 16' ]] ||
   chroma_test_fail "wrong render spans: ${_ble_highlight_layer_omarchy_chroma_osel[*]}"

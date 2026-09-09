@@ -8,26 +8,58 @@ config_home=${XDG_CONFIG_HOME:-$HOME/.config}
 install_dir=$data_home/omarchy-chroma
 bashrc=${CHROMA_BASHRC:-$HOME/.bashrc}
 purge_config=0
+temp_file=
 
-if [[ ${1:-} == --purge ]]; then
-  purge_config=1
-elif [[ ${1:-} == --help || ${1:-} == -h ]]; then
-  printf 'Usage: uninstall.sh [--purge]\n'
-  exit 0
-elif (($#)); then
-  printf 'Omarchy Chroma: error: unknown option: %s\n' "$1" >&2
-  exit 2
+cleanup() {
+  [[ ! ${temp_file:-} || ! -e $temp_file ]] || rm -f -- "$temp_file"
+}
+trap cleanup EXIT
+
+while (($#)); do
+  case $1 in
+    --purge)
+      purge_config=1
+      shift
+      ;;
+    --help|-h)
+      printf 'Usage: uninstall.sh [--purge]\n'
+      exit 0
+      ;;
+    *)
+      printf 'Omarchy Chroma: error: unknown option: %s\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -L $bashrc ]]; then
+  command -v readlink >/dev/null || {
+    printf 'Omarchy Chroma: error: readlink is required for a symlinked .bashrc\n' >&2
+    exit 1
+  }
+  bashrc=$(readlink -f -- "$bashrc") || {
+    printf 'Omarchy Chroma: error: could not resolve .bashrc symlink\n' >&2
+    exit 1
+  }
 fi
 
 if [[ -f $bashrc ]]; then
-  temp_file=$(mktemp "${TMPDIR:-/tmp}/omarchy-chroma-bashrc.XXXXXXXX")
+  temp_file=$(mktemp "$(dirname -- "$bashrc")/.omarchy-chroma-bashrc.XXXXXXXX")
   awk -v start="$START_MARKER" -v end="$END_MARKER" '
-    $0 == start { skipping=1; next }
-    $0 == end   { skipping=0; next }
-    !skipping   { print }
+    $0 == start {
+      if (inside) printf "%s", buffered
+      inside=1
+      buffered=$0 ORS
+      next
+    }
+    inside && $0 == end { inside=0; buffered=""; next }
+    inside              { buffered=buffered $0 ORS; next }
+    { print }
+    END { if (inside) printf "%s", buffered }
   ' "$bashrc" > "$temp_file"
   chmod --reference="$bashrc" "$temp_file" 2>/dev/null || true
   mv -- "$temp_file" "$bashrc"
+  temp_file=
 fi
 
 case $install_dir in
@@ -42,4 +74,3 @@ if ((purge_config)); then
 fi
 
 printf 'Omarchy Chroma: uninstalled. ble.sh was kept because other shell add-ons may use it.\n'
-

@@ -16,6 +16,8 @@ declare -p CHROMA_STYLE_CONTRAST &>/dev/null || declare -gA CHROMA_STYLE_CONTRAS
 : "${CHROMA_THEME_WORST_CONTRAST:=unknown}"
 : "${CHROMA_THEME_PATH:=}"
 : "${CHROMA_THEME_SNAPSHOT:=}"
+: "${CHROMA_THEME_ERROR:=}"
+: "${CHROMA_THEME_APPLIED:=0}"
 
 chromarchy::theme_trim() {
   ret=$1
@@ -209,10 +211,10 @@ chromarchy::theme_adjust_candidates() {
 chromarchy::theme_apply() {
   local file=${1:-} category decoration line color ratio scaled adjusted
   local worst_scaled=999999
-  local applied=0
   local categories=(install remove danger privilege system network vcs container build navigate inspect search editor)
   local candidate_categories=()
   declare -gA CHROMA_THEME_CANDIDATES=()
+  CHROMA_THEME_APPLIED=0
 
   [[ $CHROMA_THEME_INTEGRATION == 1 ]] || return 0
   [[ $file ]] || { chromarchy::theme_find_file || return 0; file=$ret; }
@@ -248,7 +250,6 @@ chromarchy::theme_apply() {
       CHROMA_STYLES["$category"]="fg=$color${decoration:+,$decoration}"
       CHROMA_THEME_LAST_STYLES[$category]=${CHROMA_STYLES[$category]}
       CHROMA_STYLE_CONTRAST[$category]=$ratio
-      ((++applied))
       scaled=${ratio/./}
       if ((10#$scaled < worst_scaled)); then
         worst_scaled=$((10#$scaled))
@@ -256,8 +257,6 @@ chromarchy::theme_apply() {
       fi
     fi
   done <<< "$adjusted"
-
-  ((applied)) || return 0
 
   CHROMA_THEME_PATH=$file
   CHROMA_THEME_SNAPSHOT=$(<"$file")
@@ -274,6 +273,9 @@ chromarchy::theme_apply() {
     IFS= read -r line < "$name_file" || true
     [[ $line =~ ^[a-zA-Z0-9._\ -]+$ ]] && CHROMA_THEME_NAME=$line
   fi
+  CHROMA_THEME_APPLIED=1
+  CHROMA_THEME_ERROR=
+  return 0
 }
 
 chromarchy::theme_refresh() {
@@ -284,4 +286,29 @@ chromarchy::theme_refresh() {
   content=$(<"$file")
   [[ $file == "$CHROMA_THEME_PATH" && $content == "$CHROMA_THEME_SNAPSHOT" ]] && return 0
   chromarchy::theme_apply "$file"
+}
+
+chromarchy::theme_reload() {
+  local file
+  CHROMA_THEME_ERROR=
+
+  if [[ $CHROMA_THEME_INTEGRATION != 1 ]]; then
+    CHROMA_THEME_ERROR='theme integration is disabled in config.bash'
+    return 1
+  fi
+  if ! command -v awk &>/dev/null; then
+    CHROMA_THEME_ERROR='awk is required to calculate accessible theme colors'
+    return 1
+  fi
+  if ! chromarchy::theme_find_file; then
+    CHROMA_THEME_ERROR='no readable Omarchy colors.toml was found'
+    return 1
+  fi
+  file=$ret
+  chromarchy::theme_apply "$file"
+  if [[ $CHROMA_THEME_APPLIED != 1 || $CHROMA_THEME_PATH != "$file" ]]; then
+    CHROMA_THEME_ERROR="could not parse a usable background from $file"
+    return 1
+  fi
+  return 0
 }

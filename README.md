@@ -27,12 +27,23 @@ chroma doctor
 chroma legend
 ```
 
+To inspect Chroma's decision without executing anything:
+
+```bash
+chroma explain 'git push --force-with-lease origin main'
+```
+
 Automatic ghost-text suggestions are disabled. Normal Tab completion and
 Omarchy's completion/history shortcuts remain available. Chroma also removes
 ble.sh's red parse/argument backgrounds and its `[ble: exit N]` marker by
 default; semantic danger colors such as red underlined `rm` remain active.
 
-The installer uses only user-owned XDG directories, adds one marked block to `~/.bashrc`, and does **not** call `sudo`. If `ble.sh` is missing, it downloads one pinned build and verifies its SHA-256 checksum before installing it locally.
+The installer uses only user-owned XDG directories, adds one marked block to
+`~/.bashrc`, and does **not** call `sudo`. Updates are assembled in a staging
+directory and activated atomically, so an incomplete source cannot overwrite a
+working installation. Existing configuration and symlinked `.bashrc` files are
+preserved. If `ble.sh` is missing, Chroma downloads one pinned build and
+verifies its SHA-256 checksum before installing it locally.
 
 Prefer reviewing before running? Clone the repository first:
 
@@ -48,7 +59,7 @@ cd omarchy-chroma
 |---|---|---|
 | Install / update | Yellow, bold | `pacman -Syu`, `flatpak install`, `npm install` |
 | Remove | Coral red, bold | `pacman -Rns`, `flatpak uninstall`, `docker rm` |
-| Dangerous | Bright red, bold, underlined | `rm`, `dd`, `mkfs`, `git reset --hard` |
+| Dangerous | Bright red, bold, underlined | `rm`, `dd`, `mkfs`, `git reset --hard`, forced Git pushes |
 | Privileged | Orange, bold | `sudo`, `doas`, `pkexec` |
 | System | Amber | `systemctl`, `mount`, `chmod` |
 | Git / VCS | Purple, bold | `git`, `gh`, `lazygit` |
@@ -57,13 +68,31 @@ cd omarchy-chroma
 | Build / runtime | Green | `make`, `cargo`, `go`, `node` |
 | Navigation / inspection / search / editors | Blue-green variants | `cd`, `bat`, `rg`, `nvim` |
 
-Chroma understands wrappers and shell chains. For example, in:
+Chroma understands wrappers, their option arguments, and shell chains. This
+includes `sudo`, `env`, `command`, `exec`, `time`, `timeout`, `nice`,
+`stdbuf`, `ionice`, `taskset`, and `chrt`. For example, in:
 
 ```bash
 sudo env LANG=C pacman -Syu firefox && git status
 ```
 
-`sudo` is orange, `pacman -Syu` is yellow, and `git status` is purple. Arguments such as `firefox` keep normal `ble.sh` syntax highlighting.
+`sudo` is orange, `pacman -Syu` is yellow, and `git status` is purple.
+Arguments such as `firefox` keep normal `ble.sh` syntax highlighting. Query
+forms such as `command -v rm` are shown as inspection rather than falsely
+warning that `rm` will run.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `chroma legend` | Show every semantic color with examples |
+| `chroma doctor` | Check ble.sh, rendering, theme, config, contrast, and the `.bashrc` loader |
+| `chroma explain COMMAND...` | Print token categories and source ranges without executing the command |
+| `chroma reload` | Reload the current Omarchy palette and report a useful error if it fails |
+| `chroma version` | Print the loaded Chroma version |
+
+Quote the complete line passed to `chroma explain` when spacing or quoting
+matters.
 
 ## Customize
 
@@ -101,11 +130,13 @@ CHROMA_THEME_INTEGRATION=1
 CHROMA_MIN_CONTRAST=5.5
 ```
 
-Open a new terminal after changing the configuration.
+Open a new terminal after changing the configuration. Invalid toggle, array,
+or contrast settings fall back safely and are listed by `chroma doctor`.
 
 ## Update
 
-Re-run the installer; your config file is preserved:
+Re-run the installer; your config file is preserved and the installed code is
+replaced as one complete unit:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/itsVoid-TV/omarchy-chroma/main/install.sh)"
@@ -129,10 +160,11 @@ Run:
 chroma doctor
 ```
 
-The report should show your Omarchy theme, its exact background color, and a
-`worst contrast` of at least `5.500`. It should also report `semantic layer`
-as `ready`, `render layer` as `registered`, and `red error feedback` as
-`disabled`. After changing a theme manually, force an immediate refresh with:
+The report should show your Omarchy theme, its exact background color, a
+`worst contrast` of at least `5.500`, valid configuration, and a healthy
+`.bashrc` loader. It should also report `semantic layer` as `ready`,
+`render layer` as `registered`, and `red error feedback` as `disabled`. After
+changing a theme manually, force an immediate refresh with:
 
 ```bash
 chroma reload
@@ -174,13 +206,14 @@ The approach follows the current [Omarchy Bash configuration](https://github.com
 bash tests/run.bash
 ```
 
-The suite covers semantic parsing, shell wrappers, operators, quotes,
-redirections, comments, fresh installation, idempotent update, config
-preservation, uninstall, and ShellCheck. It also audits all 22 themes from the
-pinned Omarchy revision and checks the actual RGB/ANSI render from the pinned
-`ble.sh` build in pseudo-terminals using both Vantablack and White. The PTY
-test also reproduces Omarchy's output-producing `cd` alias and verifies that
-Chroma starts silently without red error overlays.
+The suite covers semantic parsing, wrapper option handling, ordered render
+ranges, operators, quotes, redirections, comments, config recovery, atomic
+installation, malformed marker preservation, symlinked `.bashrc` files,
+uninstall, and ShellCheck. It also audits every theme from the pinned Omarchy
+revision and checks the actual RGB/ANSI render from the pinned `ble.sh` build
+in pseudo-terminals using both Vantablack and White. The PTY test reproduces
+Omarchy's output-producing `cd` alias and verifies silent startup without red
+error overlays.
 
 ## License
 

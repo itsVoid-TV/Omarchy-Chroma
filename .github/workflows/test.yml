@@ -10,13 +10,16 @@ permissions:
 jobs:
   bash:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: Download pinned ble.sh
         run: |
+          set -euo pipefail
           curl --fail --location --silent --show-error \
+            --connect-timeout 15 --max-time 180 --retry 3 --retry-all-errors \
             'https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly-20260818%2B63c23e9.tar.xz' \
             --output /tmp/blesh.tar.xz
           echo 'f033df78cbe6017b2bc8286852f9e4edd18fbddf0025faf19967726e06577189  /tmp/blesh.tar.xz' | sha256sum --check
@@ -24,7 +27,9 @@ jobs:
           tar --no-same-owner -xJf /tmp/blesh.tar.xz -C /tmp/blesh --strip-components=1
       - name: Download pinned Omarchy themes
         run: |
+          set -euo pipefail
           curl --fail --location --silent --show-error \
+            --connect-timeout 15 --max-time 180 --retry 3 --retry-all-errors \
             'https://github.com/omacom/omarchy/archive/493067741e081c3b09082da6bfd51e99ec24ef00.tar.gz' \
             --output /tmp/omarchy.tar.gz
           echo '6456b3d5b8e28af78d67972b5f0ea4890d088a579aec4a4c7ba694ca9a3a028b  /tmp/omarchy.tar.gz' | sha256sum --check
