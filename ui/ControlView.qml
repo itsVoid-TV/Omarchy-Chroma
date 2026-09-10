@@ -155,7 +155,7 @@ FocusScope {
             ink: root.ink
             surface: root.surface
             accent: root.accent
-            emphasized: modelData.action === "setup" && (!root.snapshot.installed || root.snapshot.updateAvailable)
+            emphasized: modelData.action === "setup" && (root.snapshot.installed !== true || root.snapshot.updateAvailable === true)
             font { family: root.fontFamily; pixelSize: root.fontSize }
             enabled: !root.busy && !root.pendingAction && (root.snapshot.installed || ["setup", "legend", "inspect"].indexOf(modelData.action) >= 0)
             onClicked: root.choose(modelData.action)

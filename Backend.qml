@@ -12,13 +12,18 @@ Item {
   property string output: ""
   property string action: ""
   property bool timedOut: false
+  property bool inspectPending: false
   readonly property string helper: decodeURIComponent(
     Qt.resolvedUrl("scripts/chroma-control").toString().replace(/^file:\/\//, ""))
 
   function request(name, confirmed) {
-    if (root.busy) return;
     if (["status", "inspect", "setup", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
     if (Model.needsConfirmation(name) && !confirmed) return;
+    if (root.busy) {
+      // Opening during the initial passive check must still load the palette.
+      if (name === "inspect" && root.action === "status") root.inspectPending = true;
+      return;
+    }
     root.action = name;
     root.busy = true;
     root.timedOut = false;
@@ -38,7 +43,7 @@ Item {
   function finish(code, text, errorText) {
     watchdog.stop();
     root.busy = false;
-    if (root.timedOut) return;
+    if (root.timedOut) { root.inspectPending = false; return; }
     try {
       var reply = JSON.parse(text);
       if (!Model.validReply(reply)) throw new Error("Invalid helper response");
@@ -60,6 +65,10 @@ Item {
       root.failed = true;
       root.message = "Could not read the Chroma helper response. Check that Python 3 and Bash are installed.";
       root.output = String(errorText || text || error).slice(0, 16000);
+    }
+    if (root.inspectPending) {
+      root.inspectPending = false;
+      Qt.callLater(function() { root.request("inspect", false); });
     }
   }
 

@@ -81,19 +81,29 @@ Rectangle {
     }
 
     function test_render_dark_light_narrow() {
-      verify(waitForRendering(view));
-      grabImage(scene).save("chroma-dark.png");
+      // grabImage renders synchronously. Waiting for a future frameSwapped
+      // signal after init's frame is already complete can time out on Qt 6.4.
+      var dark = grabImage(scene);
+      compare(dark.width, 600);
+      compare(dark.height, 720);
+      compare(dark.red(2, 2), 23);
+      dark.save("chroma-dark.png");
       view.surface = "#ffffff";
       view.ink = "#222222";
       view.snapshot = {state: "disabled", installed: true, paused: true,
         pluginVersion: "0.4.0", installedVersion: "0.4.0",
         palette: {name: "White", mode: "light", background: "#ffffff", minimum: "5.5", worst: "5.530"}};
-      verify(waitForRendering(view));
-      grabImage(scene).save("chroma-light.png");
+      wait(20);
+      var light = grabImage(scene);
+      compare(light.red(2, 2), 255);
+      verify(!light.equals(dark));
+      light.save("chroma-light.png");
       scene.width = 360;
       view.choose("uninstall");
-      verify(waitForRendering(view));
-      grabImage(scene).save("chroma-narrow.png");
+      wait(20);
+      var narrow = grabImage(scene);
+      compare(narrow.width, 360);
+      narrow.save("chroma-narrow.png");
       verify(findChild(view, "action-setup").width > 80);
     }
   }
