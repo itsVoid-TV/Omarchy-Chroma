@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -26,6 +27,7 @@ class PluginTests(unittest.TestCase):
         self.env.update({"XDG_DATA_HOME": str(self.base / "data"),
                          "XDG_CONFIG_HOME": str(self.base / "config"),
                          "XDG_STATE_HOME": str(self.base / "state"),
+                         "XDG_CACHE_HOME": str(self.base / "cache"),
                          "CHROMA_BASHRC": str(self.base / "bashrc"),
                          "CHROMA_INSTALL_BLESH": "0",
                          "CHROMA_THEME_FILE": str(ROOT / "tests/fixtures/vantablack/colors.toml")})
@@ -67,6 +69,16 @@ class PluginTests(unittest.TestCase):
         self.call("legend")
         self.assertEqual(before, self.files())
         self.assertFalse(self.settings.exists())
+
+    @unittest.skipUnless(os.environ.get("CHROMA_BLESH_PATH"), "pinned ble.sh not available")
+    def test_doctor_with_real_engine(self):
+        source = Path(os.environ["CHROMA_BLESH_PATH"]).resolve()
+        self.assertTrue(source.is_file())
+        shutil.copytree(source.parent, self.ble.parent, dirs_exist_ok=True)
+        self.call("setup", "--confirm")
+        result = self.call("doctor")
+        self.assertIn("CHROMA_DOCTOR_RESULT=0", result["output"])
+        self.assertTrue(result["data"]["enabled"])
 
     def test_every_mutation_requires_confirmation(self):
         before = self.files()

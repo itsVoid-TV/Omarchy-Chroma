@@ -53,7 +53,10 @@ fi
 bash "$XDG_DATA_HOME/omarchy-chroma/uninstall.sh" >/dev/null
 [[ ! -e $XDG_DATA_HOME/omarchy-chroma ]]
 [[ -r $XDG_CONFIG_HOME/omarchy-chroma/config.bash ]]
-! grep -Fq '# >>> omarchy-chroma >>>' "$HOME/.bashrc"
+if grep -Fq '# >>> omarchy-chroma >>>' "$HOME/.bashrc"; then
+  printf 'uninstaller left a managed Bash loader behind\n' >&2
+  exit 1
+fi
 grep -Fqx '# existing user config' "$HOME/.bashrc"
 
 # shellcheck disable=SC2030,SC2031 # each fixture intentionally has a subshell-local HOME

@@ -84,6 +84,7 @@ prepare_bashrc() {
     printf '%s\n' "$START_MARKER"
     # shellcheck disable=SC2016 # variables must expand when a terminal starts
     printf '%s\n' 'if [[ $- == *i* && -r ${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-chroma/chromarchy.bash ]]; then'
+    # shellcheck disable=SC2016 # keep the loader portable between user sessions
     printf '%s\n' '  source "${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-chroma/chromarchy.bash"'
     printf '%s\n' 'fi'
     printf '%s\n' "$END_MARKER"

@@ -234,10 +234,12 @@ FocusScope {
         visible: root.showLegend
         spacing: 8
         Text {
+          Layout.fillWidth: true
           text: "COLOR LEGEND · examples are never executed"
           textFormat: Text.PlainText
           color: root.ink
           font { family: root.fontFamily; pixelSize: root.fontSize; bold: true }
+          wrapMode: Text.WordWrap
         }
         Repeater {
           model: root.snapshot.legend || []
