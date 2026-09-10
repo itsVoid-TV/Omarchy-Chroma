@@ -18,3 +18,27 @@ succeeds, and never follows malformed loader markers past a verified closing
 marker. It pins the downloaded `ble.sh` archive and verifies its SHA-256
 checksum before extraction. GitHub Actions dependencies are pinned to immutable
 revisions.
+
+## Command Chroma plugin boundary
+
+The QML widget and Bash integration are separate. Enabling the widget performs
+only passive local status checks. Setup, enable/disable and removal require an
+explicit confirmation; setup uses the bundled checkout and saves a `.bashrc`
+backup. No plugin action calls sudo or installs system packages. Setup can
+download the pinned, SHA-256-verified ble.sh archive from GitHub when missing.
+
+The Python bridge invokes fixed argv lists, serializes mutations with a lock,
+and bounds helper execution time. It removes BASH_ENV/ENV from helper
+environments and never sources `.bashrc`. Palette inspection and the explicit
+Doctor **do** execute the user's trusted Chroma `config.bash`. It is executable
+Bash configuration, not an untrusted data format or a sandbox boundary.
+
+The panel collects no command history, terminal contents, credentials or
+telemetry. Legend examples are display-only. Doctor uses a fresh PTY and does
+not introspect other terminal processes. Custom styles are excluded from the
+reported theme-managed contrast minimum.
+
+Removing the widget does not run uninstall hooks or remove the Bash integration.
+Use its explicit removal action first if both should be removed. User settings,
+ble.sh and `.bashrc` backups are retained. Disabling the Bash add-on affects new
+shells; already open shells keep their loaded state.

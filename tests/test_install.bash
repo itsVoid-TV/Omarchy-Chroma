@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 fixture=$(mktemp -d "${TMPDIR:-/tmp}/omarchy-chroma-test.XXXXXXXX")

@@ -30,15 +30,15 @@ chromarchy::theme_find_file() {
   ret=
 
   if [[ ${CHROMA_THEME_FILE:-} ]]; then
-    [[ -r $CHROMA_THEME_FILE ]] && ret=$CHROMA_THEME_FILE
+    [[ -f $CHROMA_THEME_FILE && -r $CHROMA_THEME_FILE ]] && ret=$CHROMA_THEME_FILE
     [[ $ret ]]
     return
   fi
 
   for candidate in \
-    "$HOME/.local/state/omarchy/current/theme/colors.toml" \
-    "$HOME/.config/omarchy/current/theme/colors.toml"; do
-    if [[ -r $candidate ]]; then
+    "${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current/theme/colors.toml" \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/current/theme/colors.toml"; do
+    if [[ -f $candidate && -r $candidate ]]; then
       ret=$candidate
       return 0
     fi
@@ -279,7 +279,17 @@ chromarchy::theme_apply() {
 }
 
 chromarchy::theme_refresh() {
-  local file content
+  local file content reload_file reload_token
+  # The control panel requests a refresh, never injects input into terminals.
+  # Bash reads this small token itself; there is no subprocess per prompt.
+  reload_file=${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-chroma/reload
+  if [[ -f $reload_file && -r $reload_file ]]; then
+    IFS= read -r reload_token < "$reload_file" || reload_token=
+    if [[ $reload_token != "${CHROMA_RELOAD_TOKEN:-}" ]]; then
+      CHROMA_RELOAD_TOKEN=$reload_token
+      CHROMA_THEME_SNAPSHOT=
+    fi
+  fi
   [[ $CHROMA_THEME_INTEGRATION == 1 ]] || return 0
   chromarchy::theme_find_file || return 0
   file=$ret

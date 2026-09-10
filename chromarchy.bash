@@ -2,6 +2,7 @@
 
 [[ $- == *i* ]] || return 0
 [[ ${TERM:-} != dumb ]] || return 0
+[[ ! -e ${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-chroma/disabled ]] || return 0
 
 if ((BASH_VERSINFO[0] < 4 || BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4)); then
   printf 'Omarchy Chroma needs Bash 4.4 or newer.\n' >&2
@@ -12,7 +13,7 @@ CHROMA_ROOT=$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && builtin pwd -
   printf 'Omarchy Chroma: could not resolve its installation directory.\n' >&2
   return 1
 }
-CHROMA_VERSION=0.3.0
+CHROMA_VERSION=0.4.0
 _chromarchy_should_attach=0
 
 for _chromarchy_required in \
@@ -230,7 +231,7 @@ chroma() {
   esac
 }
 
-if [[ $CHROMA_THEME_INTEGRATION == 1 && ${CHROMA_THEME_HOOK_READY:-0} != 1 ]]; then
+if [[ ${CHROMA_THEME_HOOK_READY:-0} != 1 ]]; then
   blehook PRECMD+=chromarchy::theme_refresh
   CHROMA_THEME_HOOK_READY=1
 fi

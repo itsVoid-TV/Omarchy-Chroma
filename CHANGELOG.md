@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — Command Chroma plugin (development)
+
+- Added an Omarchy Quattro bar-widget manifest, terminal icon and native panel.
+- Added opt-in setup/update, enable/disable for new shells, theme refresh,
+  isolated Doctor, color legend and separate Bash removal.
+- Added pre-change `.bashrc` backups, serialized mutations, argument-based
+  process launching, timeouts and machine-readable errors.
+- Kept existing `omarchy-chroma` paths and the `chroma` command for compatibility.
+- Made the `.bashrc` loader tolerate a missing installation and honor a pause flag.
+- Added XDG-aware theme discovery and a next-prompt reload request token.
+- Added offline lifecycle tests and Qt control-view tests; the installer suite
+  now fails immediately when an assertion fails.
+- Marketplace submission and native Omarchy/Wayland acceptance remain separate
+  release gates; adding the widget never silently sets up Bash.
+
 ## 0.3.0 — 2026-09-09
 
 - Add `chroma explain` for inspecting token categories and source ranges

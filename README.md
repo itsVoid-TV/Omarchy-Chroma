@@ -1,6 +1,64 @@
-# Omarchy Chroma
+# Command Chroma
 
-Theme-aware semantic command colors for the stock **Omarchy Bash terminal**.
+Theme-aware semantic command colors for the stock **Omarchy Bash terminal**, with an Omarchy Quattro bar widget and control panel.
+
+Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
+installation paths are kept for compatibility. The GitHub repository has not
+been renamed.
+
+> Plugin 0.4.0 is currently developed on `codex/command-chroma-plugin`.
+> It is not a Marketplace listing or a stable release. To try this branch,
+> follow [plugin testing and installation](docs/PLUGIN_TESTING.md).
+
+## Omarchy plugin
+
+The terminal icon opens a theme-aware control panel with:
+
+- installation/enabled status **for new Bash terminals**, plus update detection;
+- the active Omarchy theme, background, calculated minimum contrast and target;
+- **Set up / update**, **Enable / Disable**, **Reload theme**, **Doctor**, and **Legend**;
+- an explicit confirmation before installation, enable/disable, or removal;
+- `.bashrc` backups and a removal action that preserves config and `ble.sh`.
+
+Adding/enabling the widget does not install the Bash add-on, download
+dependencies, or change `.bashrc`. Choose **Set up / update** and confirm first.
+That action installs the code from the checked-out plugin revision, not a
+second clone of mutable `main`. After a plugin update, choose **Set up / update**
+again if the panel reports a Bash update.
+
+The plugin ID is `io.github.itsvoid-tv.command-chroma`. The supported host is
+Omarchy **Quattro / 4.x** with `qs.Ui.BarWidget`, `Panel`, and `KeyboardPanel`.
+The widget needs Python 3 (standard library only), Bash, and Omarchy's QML host.
+The Bash installer uses standard coreutils, awk, curl and tar/xz; the isolated
+Doctor uses util-linux's `script`. Bash-only highlighting still works without
+the widget or Python.
+
+Enable/disable takes effect in **new** terminals. Existing terminals keep their
+loaded integration. **Reload theme** requests a refresh at the next prompt in
+already loaded Chroma 0.4+ shells; it does not inject keystrokes, restart terminals,
+or reload executable configuration. Open a new terminal after code/config changes.
+Doctor opens an isolated diagnostic Bash/ble.sh process; it does not inspect or
+change other open terminals.
+
+Palette inspection evaluates your trusted `config.bash`, as the add-on itself
+does, but never your `.bashrc`. Passive background status checks do not execute
+configuration. The contrast number covers theme-managed foregrounds only;
+explicit custom styles are excluded and the legend labels them accordingly.
+There is no network activity in the bridge except an explicitly requested setup
+download of a missing `ble.sh` dependency.
+
+For removal, use **Remove Bash integration…** first, then:
+
+```bash
+omarchy plugin remove io.github.itsvoid-tv.command-chroma
+```
+
+Removing/disabling the Omarchy widget alone does not undo a separately installed
+Bash add-on. This is intentional: Omarchy does not run plugin uninstall hooks.
+Backups are retained in `${XDG_STATE_HOME:-~/.local/state}/omarchy-chroma/backups`.
+The [testing guide](docs/PLUGIN_TESTING.md) includes the required on-device checks.
+
+## Bash highlighting
 
 Chroma colors what a command *does* while you type it. Package installation is yellow, removal is red, privileged wrappers are orange, Git is purple, network commands are cyan, and destructive commands are bright red and underlined.
 
@@ -14,7 +72,7 @@ because the feature lives in Bash rather than in one terminal emulator.
 `ble.sh` emits exact 24-bit color where supported and falls back to indexed
 terminal color otherwise.
 
-## Install
+## Standalone Bash installation
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/itsVoid-TV/omarchy-chroma/main/install.sh)"
@@ -214,6 +272,13 @@ revision and checks the actual RGB/ANSI render from the pinned `ble.sh` build
 in pseudo-terminals using both Vantablack and White. The PTY test reproduces
 Omarchy's output-producing `cd` alias and verifies silent startup without red
 error overlays.
+
+Plugin bridge tests cover explicit consent, no-write inspection, `.bashrc`
+backups, idempotent setup, symlink preservation, lifecycle actions, concurrency,
+timeouts, palette errors and missing dependencies. Node tests cover the pure UI
+model. Set `CHROMA_QMLTESTRUNNER` to a Qt 6 `qmltestrunner` to run the actual
+control view's confirmation, keyboard, dark/light and narrow-layout tests.
+CI enables those tests; they do not replace an Omarchy/Wayland host smoke test.
 
 ## License
 

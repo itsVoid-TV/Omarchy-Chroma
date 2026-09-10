@@ -1,0 +1,12 @@
+# shellcheck shell=bash
+# An isolated, explicit diagnostic shell, not the user's .bashrc.
+source "$CHROMA_DIAGNOSTIC_ROOT/chromarchy.bash"
+if declare -F chroma >/dev/null; then
+  chroma doctor
+  chroma_diagnostic_result=$?
+else
+  printf 'Command Chroma: no live Bash integration was loaded.\n' >&2
+  chroma_diagnostic_result=1
+fi
+printf '\nCHROMA_DOCTOR_RESULT=%s\n' "$chroma_diagnostic_result"
+exit "$chroma_diagnostic_result"

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.itsvoid-tv.command-chroma",
+  "name": "Command Chroma",
+  "version": "0.4.0",
+  "author": "itsVoid-TV",
+  "license": "MIT",
+  "description": "Theme-aware Bash command colors with opt-in setup, diagnostics, and a control panel.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "Command Chroma",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

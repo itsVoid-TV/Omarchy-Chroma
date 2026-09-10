@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""Small, local JSON bridge between Omarchy's QML host and the Bash add-on.
+
+status is a passive filesystem check. inspect/legend/doctor evaluate the user's
+trusted Chroma config, but never their .bashrc. Only setup may use the network.
+All commands are fixed argv lists; no user input is interpolated into a shell.
+"""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shlex
+import signal
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parent.parent
+PLUGIN_ID = "io.github.itsvoid-tv.command-chroma"
+CORE = ("chromarchy.bash", "config/defaults.bash", "lib/parser.bash",
+        "lib/layer.bash", "lib/theme.bash")
+START = "# >>> omarchy-chroma >>>"
+END = "# <<< omarchy-chroma <<<"
+EXAMPLES = {
+    "install": "pacman -Syu, flatpak install, npm install",
+    "remove": "pacman -Rns, flatpak uninstall",
+    "danger": "rm, dd, mkfs, git reset --hard",
+    "privilege": "sudo, doas, pkexec",
+    "system": "systemctl, mount, chmod",
+    "vcs": "git, gh, lazygit",
+    "network": "curl, wget, ssh, rsync",
+    "container": "docker, podman, kubectl",
+    "build": "make, cargo, go, node",
+    "navigate": "cd, ls, zoxide",
+    "inspect": "cat, ps, command -v",
+    "search": "rg, find, fzf",
+    "editor": "nvim, vim, helix",
+}
+CURRENT_PROCESS = None
+
+
+def text_file(path, limit=1024 * 1024):
+    """Bounded reads; do not hang on a FIFO substituted for a config file."""
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        return ""
+    if not stat.S_ISREG(info.st_mode) or info.st_size > limit:
+        raise ValueError(f"Not a small regular file: {path}")
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def clean(text):
+    text = re.sub(r"\x1b\][^\x07]*(?:\x07|\x1b\\)", "", text)
+    text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
+    return re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", text)[:16000]
+
+
+def stop_child(signum, _frame):
+    if CURRENT_PROCESS and CURRENT_PROCESS.poll() is None:
+        os.killpg(CURRENT_PROCESS.pid, signal.SIGTERM)
+        try:
+            CURRENT_PROCESS.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            os.killpg(CURRENT_PROCESS.pid, signal.SIGKILL)
+    raise SystemExit(128 + signum)
+
+
+def run(argv, timeout=8, extra_env=None):
+    global CURRENT_PROCESS
+    env = os.environ.copy()
+    # These hooks can run arbitrary startup files even with bash --norc.
+    env.pop("BASH_ENV", None)
+    env.pop("ENV", None)
+    env.update(extra_env or {})
+    CURRENT_PROCESS = subprocess.Popen(
+        argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, env=env, start_new_session=True)
+    try:
+        stdout, stderr = CURRENT_PROCESS.communicate(timeout=timeout)
+        return CURRENT_PROCESS.returncode, stdout, stderr
+    except subprocess.TimeoutExpired as error:
+        os.killpg(CURRENT_PROCESS.pid, signal.SIGTERM)
+        try:
+            CURRENT_PROCESS.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
+            os.killpg(CURRENT_PROCESS.pid, signal.SIGKILL)
+            CURRENT_PROCESS.communicate()
+        raise RuntimeError("Action timed out; its helper processes were stopped.") from error
+    finally:
+        CURRENT_PROCESS = None
+
+
+class Control:
+    def __init__(self):
+        user_home = Path.home()
+        self.data = Path(os.environ.get("XDG_DATA_HOME") or user_home / ".local/share")
+        self.config = Path(os.environ.get("XDG_CONFIG_HOME") or user_home / ".config")
+        self.state = Path(os.environ.get("XDG_STATE_HOME") or user_home / ".local/state")
+        self.bashrc = Path(os.environ.get("CHROMA_BASHRC") or user_home / ".bashrc")
+        for path in (self.data, self.config, self.state, self.bashrc):
+            if not path.is_absolute():
+                raise ValueError("XDG paths and CHROMA_BASHRC must be absolute.")
+        self.install = self.data / "omarchy-chroma"
+        self.settings = self.config / "omarchy-chroma"
+        self.runtime = self.state / "omarchy-chroma"
+        self.disabled = self.settings / "disabled"
+
+    def version(self, path):
+        match = re.search(r"^CHROMA_VERSION=([0-9.]+)$", text_file(path), re.M)
+        return match.group(1) if match else "unknown"
+
+    def status(self):
+        manifest = json.loads(text_file(ROOT / "manifest.json"))
+        installed = all((self.install / name).is_file() for name in CORE)
+        lines = text_file(self.bashrc).splitlines()
+        starts = [n for n, line in enumerate(lines) if line == START]
+        ends = [n for n, line in enumerate(lines) if line == END]
+        managed = (len(starts) == len(ends) == 1 and starts[0] < ends[0]
+                   and any("source " in line and "omarchy-chroma/chromarchy.bash" in line
+                           for line in lines[starts[0] + 1:ends[0]]))
+        malformed = bool(starts or ends) and not managed
+        ble = next((str(p) for p in (self.data / "blesh/ble.sh",
+                    Path("/usr/share/blesh/ble.sh"), Path("/usr/local/share/blesh/ble.sh"))
+                    if p.is_file() and os.access(p, os.R_OK)), "")
+        paused = self.disabled.exists() or self.disabled.is_symlink()
+        updated = installed and all(
+            hashlib.sha256((self.install / n).read_bytes()).digest()
+            == hashlib.sha256((ROOT / n).read_bytes()).digest() for n in CORE)
+        state = "not-installed"
+        if installed:
+            state = "disabled" if paused else "enabled"
+            if not managed or not ble:
+                state = "needs-attention"
+        return {
+            "id": PLUGIN_ID, "pluginVersion": manifest["version"],
+            "installedVersion": self.version(self.install / "chromarchy.bash") if installed else "",
+            "installed": installed, "managed": managed, "malformed": malformed,
+            "blePath": ble, "paused": paused, "state": state,
+            "enabled": installed and managed and bool(ble) and not paused,
+            "updateAvailable": installed and not updated,
+            "bashrc": str(self.bashrc), "installPath": str(self.install),
+            "configPath": str(self.settings / "config.bash"),
+            "scope": "Enabled means configured for NEW Bash terminals, not a live-terminal census.",
+        }
+
+    def inspect(self):
+        result = self.status()
+        source = self.install if result["installed"] else ROOT
+        try:
+            text_file(self.settings / "config.bash")
+            code, raw, stderr = run(["bash", "--noprofile", "--norc",
+                                    str(ROOT / "scripts/palette.bash"), str(source)])
+        except (OSError, ValueError, RuntimeError) as error:
+            # A diagnostic failure must not disguise a completed installation.
+            result["paletteError"] = clean(str(error))
+            return result
+        values = raw.decode("utf-8", errors="replace").split("\0")
+        if code or len(values) != 49:
+            result["paletteError"] = clean(stderr.decode(errors="replace")) or "Palette probe failed."
+            return result
+        source_name, name, mode, background, minimum, worst, error, path = values[:8]
+        legend = []
+        for index in range(8, 47, 3):
+            category, style, ratio = values[index:index + 3]
+            match = re.search(r"(?:^|,)fg=(#[0-9a-fA-F]{6})(?:,|$)", style)
+            legend.append({"category": category, "style": style,
+                           "color": match.group(1) if match else "",
+                           "ratio": ratio, "example": EXAMPLES.get(category, "")})
+        result["palette"] = {"source": source_name, "name": name, "mode": mode,
+                             "background": background, "minimum": minimum, "worst": worst,
+                             "path": path, "error": error, "warnings": values[47],
+                             "scope": "Theme-managed foregrounds only; custom styles are excluded."}
+        result["legend"] = legend
+        result["paletteError"] = error
+        return result
+
+    def write_state(self, path, content):
+        if path.parent.is_symlink():
+            raise ValueError(f"Refusing a symlinked managed directory: {path.parent}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(prefix=".chroma-", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, path)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+
+    def backup(self):
+        if not self.bashrc.exists():
+            return ""
+        path = self.runtime / "backups" / f"bashrc-{time.time_ns()}.bak"
+        self.write_state(path, text_file(self.bashrc))
+        return str(path)
+
+    def mutation(self, action):
+        snapshot = self.status()
+        if snapshot["malformed"] and action in ("setup", "uninstall"):
+            raise ValueError("The Chroma block in .bashrc is malformed. Review it before changing it; nothing was overwritten.")
+        if self.install.is_symlink() or self.settings.is_symlink() or self.runtime.is_symlink():
+            raise ValueError("Refusing to modify a symlinked Chroma managed directory.")
+        if action == "setup":
+            text_file(self.settings / "config.bash")
+            backup = self.backup()
+            code, stdout, stderr = run(
+                ["bash", str(ROOT / "install.sh"), "--source", str(ROOT)], timeout=240)
+            output = clean((stdout + stderr).decode(errors="replace"))
+            if code:
+                raise RuntimeError(output + (f"\n.bashrc backup: {backup}" if backup else ""))
+            return "Bash integration installed. Open a new terminal. " + (
+                "Your previous disabled setting was preserved." if self.disabled.exists() else ""), output + (f"\n.bashrc backup: {backup}" if backup else "")
+        if action == "uninstall":
+            backup = self.backup()
+            code, stdout, stderr = run(["bash", str(ROOT / "uninstall.sh")], timeout=15)
+            output = clean((stdout + stderr).decode(errors="replace"))
+            if code:
+                raise RuntimeError(output)
+            return "Bash integration removed. Config, backups and ble.sh were kept. Open a new terminal.", output + (f"\n.bashrc backup: {backup}" if backup else "")
+        if not snapshot["installed"] or not snapshot["managed"]:
+            raise ValueError("Set up the Bash integration first.")
+        if action == "enable":
+            if not snapshot["blePath"]:
+                raise ValueError("ble.sh is missing. Use Set up / update to install the pinned dependency.")
+            if self.disabled.exists() or self.disabled.is_symlink():
+                self.disabled.unlink()
+            return "Enabled for new Bash terminals. Existing shells keep their loaded state.", ""
+        if action == "disable":
+            if snapshot["updateAvailable"] and self.version(self.install / "chromarchy.bash") == "0.3.0":
+                raise ValueError("Update the Bash integration before using disable; version 0.3.0 has no pause switch.")
+            self.write_state(self.disabled, "Disabled from the Command Chroma control panel.\n")
+            return "Disabled for new Bash terminals. Existing shells keep their loaded state.", ""
+        if action == "reload":
+            self.write_state(self.runtime / "reload", str(time.time_ns()) + "\n")
+            return "Theme refresh requested for the next prompt in loaded 0.4+ shells. Config/code updates need a new terminal.", ""
+        raise ValueError("Unsupported mutation.")
+
+    def doctor(self, snapshot):
+        if not snapshot["enabled"]:
+            return False, "Live diagnostic skipped: set up and enable the Bash integration first."
+        command = shlex.join(["bash", "--noprofile", "--rcfile", str(ROOT / "scripts/doctor.rc"), "-i"])
+        code, stdout, stderr = run(["script", "-qfec", command, "/dev/null"], timeout=15,
+                                  extra_env={"CHROMA_DIAGNOSTIC_ROOT": str(self.install),
+                                             "TERM": "xterm-256color", "COLORTERM": "truecolor"})
+        output = clean((stdout + stderr).decode(errors="replace"))
+        passed = code == 0 and "CHROMA_DOCTOR_RESULT=0" in output
+        output = re.sub(r"CHROMA_DOCTOR_RESULT=\d+", "", output).strip()
+        return passed, "Isolated Bash/ble.sh diagnostic (not your existing terminals):\n" + output
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=["status", "inspect", "setup", "enable", "disable",
+                                            "reload", "doctor", "legend", "uninstall"])
+    parser.add_argument("--confirm", action="store_true", help="explicit consent for changing the Bash integration")
+    args = parser.parse_args()
+    mutating = args.action in ("setup", "enable", "disable", "reload", "uninstall")
+    lock = None
+    try:
+        if mutating and not args.confirm:
+            raise ValueError("This action changes your Bash integration. Review it and pass --confirm.")
+        control = Control()
+        output = ""
+        ok = True
+        message = "Status refreshed."
+        if mutating:
+            if control.runtime.is_symlink():
+                raise ValueError("Refusing a symlinked Chroma state directory.")
+            control.runtime.mkdir(parents=True, exist_ok=True)
+            fd = os.open(control.runtime / "control.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+            lock = os.fdopen(fd, "a")
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise RuntimeError("Another Chroma action is still running. Try again after it finishes.") from error
+            message, output = control.mutation(args.action)
+        data = control.status() if args.action == "status" else control.inspect()
+        if args.action == "doctor":
+            ok, output = control.doctor(data)
+            message = "Diagnostic passed." if ok else "Diagnostic found a problem."
+        elif args.action == "legend":
+            message = "Semantic color legend. Examples are never executed."
+        print(json.dumps({"schemaVersion": 1, "ok": ok, "action": args.action,
+                          "message": message, "data": data, "output": output}))
+        return 0 if ok else 1
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+        print(json.dumps({"schemaVersion": 1, "ok": False, "action": args.action,
+                          "message": clean(str(error)), "output": ""}))
+        return 1
+    finally:
+        if lock:
+            lock.close()
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, stop_child)
+    signal.signal(signal.SIGINT, stop_child)
+    sys.exit(main())

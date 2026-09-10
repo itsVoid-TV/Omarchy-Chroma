@@ -13,8 +13,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck qt6-declarative-dev-tools \
+            qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
+            qml6-module-qtquick-window qml6-module-qtquick-templates \
+            qml6-module-qtqml-workerscript qml6-module-qttest
       - name: Download pinned ble.sh
         run: |
           set -euo pipefail
@@ -39,4 +44,16 @@ jobs:
         env:
           CHROMA_BLESH_PATH: /tmp/blesh/ble.sh
           CHROMA_OMARCHY_THEMES_DIR: /tmp/omarchy/themes
+          CHROMA_QMLTESTRUNNER: /usr/lib/qt6/bin/qmltestrunner
         run: bash tests/run.bash
+      - name: Keep control-view render evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: command-chroma-control-view
+          path: |
+            chroma-dark.png
+            chroma-light.png
+            chroma-narrow.png
+          if-no-files-found: ignore
+          retention-days: 7
