@@ -1,5 +1,11 @@
 # shellcheck shell=bash
 # An isolated, explicit diagnostic shell, not the user's .bashrc.
+# Keep the engine detached: there is no user-facing terminal to take over.
+# shellcheck disable=SC1090 # validated dependency path from the bridge
+if ! source "$CHROMA_DIAGNOSTIC_BLE" --attach=none || [[ ! ${BLE_VERSION:-} ]]; then
+  printf 'Command Chroma: ble.sh could not be loaded.\nCHROMA_DOCTOR_RESULT=1\n' >&2
+  exit 1
+fi
 source "$CHROMA_DIAGNOSTIC_ROOT/chromarchy.bash"
 if declare -F chroma >/dev/null; then
   chroma doctor

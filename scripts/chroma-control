@@ -56,8 +56,9 @@ def text_file(path, limit=1024 * 1024):
 
 
 def clean(text):
-    text = re.sub(r"\x1b\][^\x07]*(?:\x07|\x1b\\)", "", text)
+    text = re.sub(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)", "", text)
     text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
+    text = re.sub(r"\x1b[ -/]*[0-~]", "", text)
     return re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", text)[:16000]
 
 
@@ -249,6 +250,7 @@ class Control:
         command = shlex.join(["bash", "--noprofile", "--rcfile", str(ROOT / "scripts/doctor.rc"), "-i"])
         code, stdout, stderr = run(["script", "-qfec", command, "/dev/null"], timeout=15,
                                   extra_env={"CHROMA_DIAGNOSTIC_ROOT": str(self.install),
+                                             "CHROMA_DIAGNOSTIC_BLE": snapshot["blePath"],
                                              "TERM": "xterm-256color", "COLORTERM": "truecolor"})
         output = clean((stdout + stderr).decode(errors="replace"))
         passed = code == 0 and "CHROMA_DOCTOR_RESULT=0" in output

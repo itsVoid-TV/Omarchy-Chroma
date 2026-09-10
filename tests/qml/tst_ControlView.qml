@@ -42,7 +42,8 @@ Rectangle {
       mouseClick(setup);
       compare(view.pendingAction, "setup");
       compare(requestSpy.count, 0);
-      view.confirmPending();
+      wait(20);
+      mouseClick(findChild(view, "confirm"));
       compare(requestSpy.count, 1);
       compare(requestSpy.signalArguments[0][0], "setup");
       compare(requestSpy.signalArguments[0][1], true);

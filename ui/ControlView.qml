@@ -180,7 +180,7 @@ FocusScope {
             textFormat: Text.PlainText
             color: root.ink
             font { family: root.fontFamily; pixelSize: root.fontSize }
-            wrapMode: Text.WrapAnywhere
+            wrapMode: Text.Wrap
           }
           RowLayout {
             Layout.fillWidth: true

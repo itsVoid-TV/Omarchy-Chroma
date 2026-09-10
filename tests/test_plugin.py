@@ -75,10 +75,16 @@ class PluginTests(unittest.TestCase):
         source = Path(os.environ["CHROMA_BLESH_PATH"]).resolve()
         self.assertTrue(source.is_file())
         shutil.copytree(source.parent, self.ble.parent, dirs_exist_ok=True)
+        (self.base / "cache").mkdir()
         self.call("setup", "--confirm")
         result = self.call("doctor")
-        self.assertIn("CHROMA_DOCTOR_RESULT=0", result["output"])
+        self.assertEqual(result["message"], "Diagnostic passed.")
+        self.assertIn("semantic layer     ready", result["output"])
+        self.assertNotIn("CHROMA_DOCTOR_RESULT", result["output"])
         self.assertTrue(result["data"]["enabled"])
+
+    def test_terminal_escape_cleanup(self):
+        self.assertEqual(bridge.clean("\x1b]0;title\x07\x1b7\x1b(B\x1b[31mready\x1b[0m\x1b8"), "ready")
 
     def test_every_mutation_requires_confirmation(self):
         before = self.files()
