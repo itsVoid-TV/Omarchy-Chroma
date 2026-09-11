@@ -19,7 +19,17 @@ jobs:
           sudo apt-get install -y shellcheck qt6-declarative-dev-tools \
             qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
             qml6-module-qtquick-window qml6-module-qtquick-templates \
-            qml6-module-qtqml-workerscript qml6-module-qttest
+            qml6-module-qtqml-workerscript qml6-module-qttest \
+            xterm xvfb xauth x11-utils imagemagick fonts-dejavu-core
+      - name: Build the pinned Omarchy screensaver engine
+        run: |
+          set -euo pipefail
+          git init /tmp/chroma-ttfx
+          git -C /tmp/chroma-ttfx remote add origin https://github.com/omacom/ttfx.git
+          git -C /tmp/chroma-ttfx fetch --depth=1 origin 7203e354498462064b7c0a89375051f65cf2ce99
+          git -C /tmp/chroma-ttfx checkout --detach FETCH_HEAD
+          cargo build --release --locked --manifest-path /tmp/chroma-ttfx/Cargo.toml
+          echo '/tmp/chroma-ttfx/target/release' >> "$GITHUB_PATH"
       - name: Download pinned ble.sh
         run: |
           set -euo pipefail
@@ -45,7 +55,10 @@ jobs:
           CHROMA_BLESH_PATH: /tmp/blesh/ble.sh
           CHROMA_OMARCHY_THEMES_DIR: /tmp/omarchy/themes
           CHROMA_QMLTESTRUNNER: /usr/lib/qt6/bin/qmltestrunner
+          CHROMA_TTFX_REQUIRED: '1'
         run: bash tests/run.bash
+      - name: Capture the actual terminal installer preview
+        run: xvfb-run -a python3 tests/capture_terminal.py
       - name: Keep control-view render evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -55,7 +68,7 @@ jobs:
             chroma-dark.png
             chroma-light.png
             chroma-narrow.png
-            chroma-installer-welcome.png
-            chroma-installer-review.png
+            chroma-first-run.png
+            chroma-terminal-installer.png
           if-no-files-found: ignore
           retention-days: 7

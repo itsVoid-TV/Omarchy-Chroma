@@ -1,7 +1,7 @@
 # Command Chroma
 
-Theme-aware semantic Bash command highlighting for **Omarchy**, with a guided
-first-run setup, readable contrast, diagnostics, and a native Quattro control panel.
+Theme-aware semantic Bash command highlighting for **Omarchy**, with an animated
+English terminal installer, readable contrast, diagnostics, and a native Quattro control panel.
 
 Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
@@ -23,8 +23,23 @@ open a terminal inside its folder, and run:
 ```
 
 If the archive tool removed executable permissions, use `python3 setup`.
-The colorful bootstrap validates the plugin and creates a real Git checkout,
-so later updates work through Omarchy. It does not touch `.bashrc`.
+The bootstrap animates the Chroma logo, validates the plugin and creates a real
+Git checkout, so later updates work through Omarchy. After enabling the widget,
+it continues **in the same terminal** with a separate review and confirmation
+for the Bash integration. The bootstrap phase itself does not touch `.bashrc`.
+`./setup --yes` confirms only the widget; it does not run Bash setup silently.
+
+Already have this checkout? Start only the terminal installer:
+
+```bash
+./setup --bash
+```
+
+For a safe visual preview (no config reads, downloads or changes):
+
+```bash
+./setup --preview
+```
 
 Once this branch has passed the real-device checklist and is merged, the normal
 installation will be one standard Omarchy command:
@@ -34,12 +49,32 @@ omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
 ```
 
 Omarchy deliberately does not execute install hooks. The command adds and
-enables the widget; clicking its Chroma logo opens the guided installer. The
-installer shows every planned change before its final confirmation.
+enables the widget. Click its Chroma logo, then **Set up in terminal**. The
+terminal installer shows every planned change before its final confirmation.
+
+## The terminal installer
+
+All installer text is **English**. The Chroma logo uses
+[`ttfx`](https://github.com/omacom/ttfx), the same text-effects engine used by
+[Omarchy Quattro's screensaver](https://github.com/omacom/omarchy/blob/quattro/bin/omarchy-screensaver),
+with a violet → pink → cyan `beams` animation. The original `tte` command is
+supported as a fallback for older systems. Chroma does not launch the screensaver,
+hide the desktop cursor, alter terminal background settings or stop other effects.
+
+The flow is **Review → Install → Ready**, entirely inside your terminal. Enter
+skips the intro; Escape cancels it. At the install prompt, `y` confirms and
+Enter / `n` / Escape cancels. Ctrl-C interrupts setup and stops its own helpers;
+completed changes remain and should be checked before retrying. Errors stay visible
+and include the retry command. A terminal opened by the widget stays open until
+you press Enter, and the widget refreshes its status on reopening or its next poll.
+
+Use `--no-animation` to skip motion, or `NO_COLOR=1 ./setup --bash` for plain
+output. Missing or failing `ttfx`/`tte` falls back to the static logo; no extra
+package is installed. On narrow terminals the logo becomes a compact `>_` mark.
 
 ## Preview
 
-![Command Chroma guided installer screenshot placeholder](docs/images/installer-placeholder.svg)
+![Command Chroma terminal installer screenshot placeholder](docs/images/installer-placeholder.svg)
 
 ![Command Chroma dashboard screenshot placeholder](docs/images/dashboard-placeholder.svg)
 
@@ -51,26 +86,28 @@ where to put it.
 
 ## Omarchy plugin
 
-The Chroma logo opens a theme-aware first-run installer or, after setup, the
-control panel with:
+The Chroma logo opens the theme-aware control panel with:
 
 - installation/enabled status **for new Bash terminals**, plus update detection;
 - the active Omarchy theme, background, calculated minimum contrast and target;
-- **Set up / update**, **Enable / Disable**, **Reload theme**, **Doctor**, and **Legend**;
+- **Set up in terminal**, **Enable / Disable**, **Reload theme**, **Doctor**, and **Legend**;
 - an explicit confirmation before installation, enable/disable, or removal;
 - `.bashrc` backups and a removal action that preserves config and `ble.sh`.
 
 Adding/enabling the widget does not install the Bash add-on, download
-dependencies, or change `.bashrc`. The guided installer first shows its command
-preview, destination, `.bashrc` loader, backup policy and optional pinned ble.sh
-download. Only its final **Install Command Chroma** button performs setup. It
+dependencies, or change `.bashrc`. **Set up in terminal** only opens the terminal;
+it never passes silent-install consent. The English terminal installer shows the
+destination, `.bashrc` loader, backup policy and optional pinned ble.sh download.
+Only an explicit `y` at the final review prompt performs setup. It
 installs code from the checked-out plugin revision, not a second clone of
-mutable `main`. After a plugin update, open **Set up / update** if the dashboard
+mutable `main`. After a plugin update, use **Set up in terminal** if the dashboard
 reports a Bash update.
 
 The plugin ID is `io.github.itsvoid-tv.command-chroma`. The supported host is
 Omarchy **Quattro / 4.x** with `qs.Ui.BarWidget`, `Panel`, and `KeyboardPanel`.
 The widget needs Python 3 (standard library only), Bash, and Omarchy's QML host.
+Terminal launching uses `omarchy-launch-terminal`, or `xdg-terminal-exec` when
+the Omarchy wrapper is unavailable; the terminal installer itself can be run directly.
 The Bash installer uses standard coreutils, awk, curl and tar/xz; the isolated
 Doctor uses util-linux's `script`. Bash-only highlighting still works without
 the widget or Python.
@@ -86,7 +123,7 @@ Palette inspection evaluates your trusted `config.bash`, as the add-on itself
 does, but never your `.bashrc`. Passive background status checks do not execute
 configuration. The contrast number covers theme-managed foregrounds only;
 explicit custom styles are excluded and the legend labels them accordingly.
-There is no network activity in the bridge except an explicitly requested setup
+There is no network activity in the bridge except an explicitly confirmed setup
 download of a missing `ble.sh` dependency.
 
 For removal, use **Remove Bash integration…** first, then:
@@ -240,7 +277,7 @@ or contrast settings fall back safely and are listed by `chroma doctor`.
 ## Update
 
 For the plugin, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-the-development-checkout),
-then choose **Set up / update** in the dashboard when it reports a Bash update.
+then choose **Set up in terminal** in the dashboard when it reports a Bash update.
 
 For the standalone version, download and extract a current `main` ZIP and run
 this from its folder. Your config file is preserved and the code is replaced as

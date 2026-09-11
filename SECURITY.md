@@ -28,10 +28,19 @@ backup. No plugin action calls sudo or installs system packages. Setup can
 download the pinned, SHA-256-verified ble.sh archive from GitHub when missing.
 
 Omarchy's `plugin add` intentionally never executes plugin hooks. Chroma does
-not bypass that boundary: its first-run installer is UI only until the user
-reviews the changes and presses the final install button. The separate `./setup`
-development bootstrap only clones, validates and enables the widget; it does
-not install the Bash engine or touch `.bashrc`.
+not bypass that boundary: the panel only opens an English terminal installer,
+without passing `--yes`. The user reviews the changes and presses `y` in that
+terminal before Bash setup begins. The `./setup` development bootstrap first
+clones, validates and enables the widget, then (when interactive) hands off to
+the same terminal installer with a separate confirmation. `./setup --yes`
+confirms only the widget. `./setup --bash --yes` explicitly confirms Bash setup.
+
+The optional logo animation uses an existing `ttfx` or `tte` binary with fixed
+arguments and the bundled logo file. It never starts the screensaver, downloads
+an effects engine, changes desktop cursor/background settings or uses global
+process-name killing. Animation is time-bounded and terminal modes are restored
+on exit. `--preview` does not read user config or run the helper. Dynamic paths
+and diagnostics are stripped of terminal-control sequences before display.
 
 The Python bridge invokes fixed argv lists, serializes mutations with a lock,
 and bounds helper execution time. It removes BASH_ENV/ENV from helper

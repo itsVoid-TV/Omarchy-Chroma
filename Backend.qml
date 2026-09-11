@@ -17,7 +17,7 @@ Item {
     Qt.resolvedUrl("scripts/chroma-control").toString().replace(/^file:\/\//, ""))
 
   function request(name, confirmed) {
-    if (["status", "inspect", "setup", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
+    if (["status", "inspect", "installer", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
     if (Model.needsConfirmation(name) && !confirmed) return;
     if (root.busy) {
       // Opening during the initial passive check must still load the palette.
@@ -29,13 +29,13 @@ Item {
     root.timedOut = false;
     if (name !== "status") {
       root.failed = false;
-      root.message = name === "setup" ? "Installing… a missing ble.sh may take a few minutes." : "Working…";
+      root.message = name === "installer" ? "Opening the installer in your terminal…" : "Working…";
       root.output = "";
     }
     var argv = ["python3", root.helper, name];
     if (confirmed || name === "reload") argv.push("--confirm");
     runner.command = argv;
-    watchdog.interval = name === "setup" ? 255000 : 30000;
+    watchdog.interval = 30000;
     watchdog.restart();
     runner.running = true;
   }
@@ -49,7 +49,7 @@ Item {
       if (!Model.validReply(reply)) throw new Error("Invalid helper response");
       if (reply.data) {
         // Cheap background checks must not discard the last palette inspection.
-        if (root.action === "status" && root.snapshot.palette) {
+        if (["status", "installer"].indexOf(root.action) >= 0 && root.snapshot.palette) {
           reply.data.palette = root.snapshot.palette;
           reply.data.legend = root.snapshot.legend;
           reply.data.paletteError = root.snapshot.paletteError;

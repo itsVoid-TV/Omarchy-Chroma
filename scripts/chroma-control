@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import signal
 import stat
 import subprocess
@@ -230,7 +231,7 @@ class Control:
             raise ValueError("Set up the Bash integration first.")
         if action == "enable":
             if not snapshot["blePath"]:
-                raise ValueError("ble.sh is missing. Use Set up / update to install the pinned dependency.")
+                raise ValueError("ble.sh is missing. Use Set up in terminal to install the pinned dependency.")
             if self.disabled.exists() or self.disabled.is_symlink():
                 self.disabled.unlink()
             return "Enabled for new Bash terminals. Existing shells keep their loaded state.", ""
@@ -258,10 +259,31 @@ class Control:
         return passed, "Isolated Bash/ble.sh diagnostic (not your existing terminals):\n" + output
 
 
+def open_installer():
+    launcher = shutil.which("omarchy-launch-terminal") or shutil.which("xdg-terminal-exec")
+    if not launcher:
+        raise RuntimeError("No terminal launcher found. Run ./setup --bash from the plugin checkout.")
+    env = os.environ.copy()
+    env.pop("BASH_ENV", None)
+    env.pop("ENV", None)
+    # Detached from the QML helper and its watchdog. All actual changes require
+    # a second, explicit confirmation inside the terminal; never pass --yes.
+    process = subprocess.Popen([launcher, sys.executable, str(ROOT / "scripts/chroma-installer"), "--hold"],
+                               stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL, env=env, start_new_session=True)
+    try:
+        code = process.wait(timeout=0.25)
+        if code:
+            raise RuntimeError("The terminal could not open. Run ./setup --bash from the plugin checkout.")
+    except subprocess.TimeoutExpired:
+        pass  # Some launchers stay attached to the terminal for its lifetime.
+    return "Installer requested in your terminal. Review and confirm there; no Bash changes were made by this button."
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["status", "inspect", "setup", "enable", "disable",
-                                            "reload", "doctor", "legend", "uninstall"])
+                                            "reload", "doctor", "legend", "uninstall", "installer"])
     parser.add_argument("--confirm", action="store_true", help="explicit consent for changing the Bash integration")
     args = parser.parse_args()
     mutating = args.action in ("setup", "enable", "disable", "reload", "uninstall")
@@ -284,7 +306,9 @@ def main():
             except BlockingIOError as error:
                 raise RuntimeError("Another Chroma action is still running. Try again after it finishes.") from error
             message, output = control.mutation(args.action)
-        data = control.status() if args.action == "status" else control.inspect()
+        if args.action == "installer":
+            message = open_installer()
+        data = control.status() if args.action in ("status", "installer") else control.inspect()
         if args.action == "doctor":
             ok, output = control.doctor(data)
             message = "Diagnostic passed." if ok else "Diagnostic found a problem."

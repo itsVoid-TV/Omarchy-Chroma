@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Guided English terminal installer for Command Chroma's bundled Bash code."""
+import argparse
+import json
+import signal
+import sys
+
+from installer_ui import Cancelled, Terminal, review, safe
+
+
+def reply(ui, action, *, confirmed=False):
+    code, stdout, stderr = ui.run_helper(action, confirmed=confirmed)
+    try:
+        data = json.loads(stdout)
+    except (UnicodeDecodeError, ValueError) as error:
+        raise RuntimeError("The Chroma helper returned an invalid response. " + safe(stderr.decode(errors="replace"))) from error
+    if (not isinstance(data, dict) or data.get("schemaVersion") != 1
+            or not isinstance(data.get("ok"), bool) or not isinstance(data.get("message"), str)):
+        raise RuntimeError("The Chroma helper returned an invalid response.")
+    if code or not data["ok"]:
+        raise RuntimeError(data["message"] + "\n" + str(data.get("output", "")))
+    return data
+
+
+def install(ui, *, assume_yes=False):
+    if not assume_yes and not ui.interactive:
+        raise RuntimeError("Run ./setup --bash in a terminal, or pass --yes explicitly.")
+    snapshot = reply(ui, "status").get("data", {})
+    review(ui, snapshot)
+    if snapshot.get("malformed"):
+        raise RuntimeError("Repair the malformed Chroma block in .bashrc before retrying.")
+    if not assume_yes and not ui.confirm("Install / update Command Chroma's Bash integration?"):
+        return 0
+    ui.say("02 INSTALL  /  Installing bundled Bash code and verifying dependencies…", "52d6ff", bold=True)
+    result = reply(ui, "setup", confirmed=True)
+    state = result.get("data") or {}
+    if not state.get("installed") or not state.get("managed"):
+        raise RuntimeError("Setup did not report a complete Bash installation. Check the status before retrying.")
+    ui.say(result.get("output", ""))
+    ui.rule()
+    ui.say("03 READY  /  COMMAND CHROMA IS INSTALLED", "52d6ff", bold=True)
+    ui.say(result["message"])
+    if not state.get("enabled"):
+        ui.say("Not enabled for new terminals yet: " + state.get("state", "needs-attention"), "ff5da2")
+    ui.say("Open a NEW Bash terminal, then run:")
+    ui.say("chroma doctor", "a970ff", bold=True)
+    ui.say("The Chroma icon opens the dashboard. Existing terminals are not restarted.")
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--yes", action="store_true", help="explicitly confirm changes to the Bash integration")
+    parser.add_argument("--no-animation", action="store_true", help="skip the ttfx / TTE intro")
+    parser.add_argument("--preview", action="store_true", help="show a safe sample without reading or changing configuration")
+    parser.add_argument("--hold", action="store_true", help="keep a newly launched terminal open on completion")
+    args = parser.parse_args(argv)
+    ui = Terminal(no_animation=args.no_animation or args.yes)
+    code = 0
+    try:
+        if args.preview:
+            ui.animate()
+            review(ui, {"installPath": "~/.local/share/omarchy-chroma", "bashrc": "~/.bashrc"}, preview=True)
+        else:
+            ui.animate()
+            code = install(ui, assume_yes=args.yes)
+    except Cancelled:
+        ui.say("Cancelled. No installation was started.")
+    except KeyboardInterrupt:
+        ui.say("Interrupted. Check the installation status before retrying; completed changes are kept.")
+        code = 130
+    except (OSError, ValueError, RuntimeError) as error:
+        ui.say("SETUP NEEDS ATTENTION", "ff5da2", bold=True)
+        ui.say(str(error))
+        ui.say("Review the error, then retry with ./setup --bash.")
+        code = 1
+    finally:
+        ui.restore()
+    if args.hold and ui.interactive:
+        try:
+            input("\n  Press Enter to close this terminal. ")
+        except (EOFError, KeyboardInterrupt):
+            pass
+    return code
+
+
+if __name__ == "__main__":
+    # A window close / TERM still unwinds finally blocks and stops only our children.
+    def interrupted(_signum, _frame):
+        raise KeyboardInterrupt()
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGHUP, interrupted)
+    sys.exit(main())

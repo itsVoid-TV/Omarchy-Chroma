@@ -2,10 +2,15 @@
 
 ## 0.4.0 — Command Chroma plugin (development)
 
-- Added a branded, theme-aware first-run installer with command-color preview,
-  transparent change review, progress, retry and completion states.
+- Moved the first-run installer entirely into the terminal, in English, using
+  Omarchy's `ttfx` screensaver engine (original `tte` fallback) for the Chroma logo.
+- Added review, explicit terminal consent, real progress, visible errors, safe
+  preview mode, no-motion/no-color options, narrow-layout and static fallbacks.
+- Removed the superseded QML setup wizard; the panel now opens the terminal
+  without granting Bash consent or tying the installer to the panel's lifetime.
 - Added a short colored `./setup` bootstrap for testing the non-default branch;
-  it creates a validated Git checkout without modifying Bash configuration.
+  it creates a validated Git checkout, then interactively continues to a separate
+  Bash review in the same terminal. `--yes` alone still confirms only the widget.
 - Added an Omarchy Quattro bar-widget manifest, terminal icon and native panel.
 - Added opt-in setup/update, enable/disable for new shells, theme refresh,
   isolated Doctor, color legend and separate Bash removal.
@@ -14,7 +19,8 @@
 - Kept existing `omarchy-chroma` paths and the `chroma` command for compatibility.
 - Made the `.bashrc` loader tolerate a missing installation and honor a pause flag.
 - Added XDG-aware theme discovery and a next-prompt reload request token.
-- Added offline lifecycle tests and Qt control-view tests; the installer suite
+- Added offline lifecycle, real terminal/PTY, pinned-ttfx and Qt control-view tests,
+  plus actual xterm screenshots in CI; the installer suite
   now fails immediately when an assertion fails.
 - Marketplace submission and native Omarchy/Wayland acceptance remain separate
   release gates; adding the widget never silently sets up Bash.

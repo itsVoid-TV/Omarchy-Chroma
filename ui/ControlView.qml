@@ -17,23 +17,18 @@ FocusScope {
   property int fontSize: 13
   property string pendingAction: ""
   property bool showLegend: false
-  property bool setupFlowActive: false
   readonly property var paletteInfo: snapshot.palette || ({})
   signal requested(string action, bool confirmed)
   signal closeRequested()
 
   function beginSetup() {
-    root.pendingAction = "";
-    root.setupFlowActive = true;
-  }
-
-  function leaveSetup() {
-    if (root.snapshot.installed === true) root.setupFlowActive = false;
-    else root.closeRequested();
+    if (root.busy || root.pendingAction) return;
+    root.requested("installer", false);
   }
 
   function choose(action) {
     if (root.busy) return;
+    if (action === "setup") { root.beginSetup(); return; }
     if (Model.needsConfirmation(action)) {
       root.pendingAction = action;
       Qt.callLater(function() { cancelButton.forceActiveFocus(); });
@@ -51,44 +46,14 @@ FocusScope {
   }
 
   Keys.onEscapePressed: function(event) {
-    if (root.setupFlowActive) {
-      setupWizard.goBack();
-      event.accepted = true;
-      return;
-    }
     if (root.pendingAction) root.pendingAction = "";
     else root.closeRequested();
     event.accepted = true;
   }
 
-  onSnapshotChanged: {
-    if (snapshot.state === "not-installed") root.setupFlowActive = true;
-  }
-
-  SetupView {
-    id: setupWizard
-    objectName: "setup-wizard"
-    anchors.fill: parent
-    visible: root.setupFlowActive
-    active: root.setupFlowActive
-    snapshot: root.snapshot
-    busy: root.busy
-    failed: root.failed
-    message: root.message
-    output: root.output
-    ink: root.ink
-    surface: root.surface
-    accent: root.accent
-    fontFamily: root.fontFamily
-    fontSize: root.fontSize
-    onRequested: function(action, confirmed) { root.requested(action, confirmed); }
-    onDismissRequested: root.leaveSetup()
-  }
-
   ScrollView {
     id: scroll
     anchors.fill: parent
-    visible: !root.setupFlowActive
     clip: true
     contentWidth: availableWidth
     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
@@ -113,6 +78,15 @@ FocusScope {
         color: root.ink
         font.family: root.fontFamily
         font.pixelSize: root.fontSize
+        wrapMode: Text.WordWrap
+      }
+      Text {
+        Layout.fillWidth: true
+        visible: root.snapshot.installed !== true || root.snapshot.updateAvailable === true
+        text: "Setup runs in your terminal with the Chroma text animation. Review and confirm there; opening this panel never installs anything."
+        textFormat: Text.PlainText
+        color: root.ink
+        font { family: root.fontFamily; pixelSize: root.fontSize }
         wrapMode: Text.WordWrap
       }
       Rectangle {
@@ -180,7 +154,7 @@ FocusScope {
         columnSpacing: 8
         Repeater {
           model: [
-            {action: "setup", label: "Set up / update"},
+            {action: "setup", label: "Set up in terminal"},
             {action: root.snapshot.paused ? "enable" : "disable", label: root.snapshot.paused ? "Enable" : "Disable"},
             {action: "reload", label: "Reload theme"},
             {action: "doctor", label: "Doctor"},

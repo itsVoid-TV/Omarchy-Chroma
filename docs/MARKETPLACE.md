@@ -28,17 +28,19 @@ projects. Recheck permanent-ID availability before submitting.
 ## Facts for the maintainer notes
 
 - Native Quattro bar-widget entry point with a real control panel.
-- Guided, branded first-run UI with a semantic-color preview, explicit review,
-  progress/error/success states and a clear handoff to the dashboard.
+- Branded English terminal installer with the same `ttfx` engine as Omarchy's
+  screensaver, explicit review/consent, progress, errors and completion guidance.
+  The panel launches it without silently granting install consent.
 - Development ZIP bootstrap creates a validated, updateable Git checkout; the
   release installation remains Omarchy's standard `plugin add` command.
 - Bash 4.4+, ble.sh, Python 3 standard library, coreutils/awk and util-linux.
+  An existing `ttfx` / `tte` is optional; a static logo works without either.
 - No sudo, system package installation, telemetry, or terminal-history access.
 - Enabling the widget does not install anything or edit `.bashrc`.
 - Explicit setup confirmation explains the marked `.bashrc` change and the
   pinned/checksummed GitHub download of ble.sh if absent.
 - Existing configuration and `.bashrc` symlinks survive; pre-change backups
-  are retained. Malformed managed blocks are refused by the GUI bridge.
+  are retained. Malformed managed blocks are refused by the shared local bridge.
 - Changes to `.bashrc`, downloads, and executable Chroma config must be disclosed
   for review. QML plugins and Bash config are not sandboxed.
 - Widget lifecycle and Bash lifecycle are distinct and documented. Removal of

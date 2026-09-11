@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch, MagicMock
 
 ROOT = Path(__file__).resolve().parent.parent
 HELPER = ROOT / "scripts/chroma-control"
@@ -69,6 +70,33 @@ class PluginTests(unittest.TestCase):
         self.call("legend")
         self.assertEqual(before, self.files())
         self.assertFalse(self.settings.exists())
+
+    def test_installer_launch_never_passes_consent_or_shell_text(self):
+        launcher = "/usr/bin/omarchy-launch-terminal"
+        process = MagicMock()
+        process.wait.side_effect = subprocess.TimeoutExpired([launcher], 0.25)
+        with patch.object(bridge.shutil, "which", return_value=launcher), \
+                patch.object(bridge.subprocess, "Popen", return_value=process) as spawn, \
+                patch.dict(os.environ, {"BASH_ENV": "/do-not-source", "ENV": "/do-not-source"}):
+            self.assertIn("terminal", bridge.open_installer())
+        argv = spawn.call_args.args[0]
+        self.assertEqual(argv, [launcher, bridge.sys.executable, str(ROOT / "scripts/chroma-installer"), "--hold"])
+        self.assertNotIn("--yes", argv)
+        self.assertNotIn("BASH_ENV", spawn.call_args.kwargs["env"])
+        self.assertNotIn("ENV", spawn.call_args.kwargs["env"])
+        self.assertTrue(spawn.call_args.kwargs["start_new_session"])
+
+    def test_installer_launcher_fallback_and_failure(self):
+        with patch.object(bridge.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(RuntimeError, "No terminal launcher"):
+                bridge.open_installer()
+        process = MagicMock()
+        process.wait.return_value = 1
+        with patch.object(bridge.shutil, "which", side_effect=[None, "/usr/bin/xdg-terminal-exec"]), \
+                patch.object(bridge.subprocess, "Popen", return_value=process) as spawn:
+            with self.assertRaisesRegex(RuntimeError, "could not open"):
+                bridge.open_installer()
+        self.assertEqual(spawn.call_args.args[0][0], "/usr/bin/xdg-terminal-exec")
 
     @unittest.skipUnless(os.environ.get("CHROMA_BLESH_PATH"), "pinned ble.sh not available")
     def test_doctor_with_real_engine(self):

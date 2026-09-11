@@ -6,11 +6,12 @@ with the matching real WebP image below.
 
 ## `installer.webp`
 
-- Open Command Chroma before installing the Bash integration.
-- Capture the complete welcome page with its Chroma logo, three setup steps and
-  semantic command-color preview.
+- Run `./setup --preview` in an Omarchy terminal. This shows neutral sample paths
+  without reading config, downloading anything, or installing Chroma.
+- Capture the terminal after the ttfx logo animation, with the Chroma wordmark,
+  English review and safety notice visible. Use roughly 100 columns × 38 rows.
 - Use Vantablack or another recognizably dark Omarchy theme.
-- Crop to the panel with a small amount of bar context. Target roughly 1280×720.
+- Crop to the terminal with a small amount of desktop context. Target roughly 1280×720.
 - Do not show usernames, home paths, notifications, tokens or unrelated apps.
 
 ## `dashboard.webp`
@@ -36,4 +37,7 @@ After adding the real files, change these README paths:
 
 Keep the placeholders until every replacement has been reviewed at GitHub's
 rendered README size. Do not claim offscreen Qt test renders are real Omarchy
-screenshots.
+screenshots. CI also captures the actual terminal installer in xterm/Xvfb via
+`tests/capture_terminal.py` and publishes `chroma-terminal-installer.png` in the
+render artifact. It is a real terminal screenshot in preview mode, not an AI
+image, but not evidence of native Omarchy / Wayland behavior.
