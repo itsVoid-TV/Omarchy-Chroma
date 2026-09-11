@@ -39,6 +39,8 @@ def child_env():
     env = os.environ.copy()
     env.pop("BASH_ENV", None)
     env.pop("ENV", None)
+    # Dependency diagnostics are English too, even on a localized desktop.
+    env["LC_ALL"] = "C.UTF-8"
     return env
 
 
@@ -109,6 +111,9 @@ class Terminal:
         if not binary:
             self.say("Animation unavailable: ttfx/tte is not installed. Using the static logo.")
             return False
+        # Keep the transient effect off the user's scrollback, then return to
+        # the original buffer for one clean, persistent review page.
+        print("\033[?1049h\033[H", end="", flush=True)
         self.say("COMMAND CHROMA  /  Enter skips the intro · Esc cancels", "52d6ff")
         process = None
         try:
@@ -133,9 +138,12 @@ class Terminal:
             self.say("Animation could not start. Continuing with the static logo.")
             return False
         finally:
-            if process is not None:
-                stop_process(process)
-            self.restore()
+            try:
+                if process is not None:
+                    stop_process(process)
+            finally:
+                print("\033[?1049l", end="", flush=True)
+                self.restore()
 
     def banner(self, subtitle="TERMINAL SETUP"):
         print()

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -158,6 +159,40 @@ class SetupTests(unittest.TestCase):
             self.install()
         self.assertTrue((self.target / ".git").is_dir())
         self.assertEqual(self.bashrc.read_text(), "# keep existing Bash setup\n")
+
+    def test_yes_never_hands_off_to_bash_even_in_an_interactive_terminal(self):
+        terminal = SimpleNamespace(interactive=True, animate=lambda: None)
+        with patch.object(setup.sys, "argv", ["setup", "--yes"]), \
+                patch.object(setup, "Terminal", return_value=terminal), \
+                patch.object(setup, "install", return_value=self.target), \
+                patch.object(setup.os, "execv") as handoff:
+            self.assertEqual(setup.main(), 0)
+            handoff.assert_not_called()
+
+    def test_interactive_handoff_keeps_terminal_and_never_passes_yes(self):
+        class Handoff(Exception):
+            pass
+        terminal = SimpleNamespace(interactive=True, animate=lambda: None)
+        with patch.object(setup.sys, "argv", ["setup"]), \
+                patch.object(setup, "Terminal", return_value=terminal), \
+                patch.object(setup, "install", return_value=self.target), \
+                patch.object(setup.os, "execv", side_effect=Handoff) as handoff:
+            with self.assertRaises(Handoff):
+                setup.main()
+            self.assertEqual(handoff.call_args.args[1], [setup.sys.executable,
+                             str(self.target / "scripts/chroma-installer"), "--no-animation"])
+
+    def test_preview_bypasses_plugin_bootstrap(self):
+        class Handoff(Exception):
+            pass
+        with patch.object(setup.sys, "argv", ["setup", "--preview", "--no-animation"]), \
+                patch.object(setup, "install") as bootstrap, \
+                patch.object(setup.os, "execv", side_effect=Handoff) as handoff:
+            with self.assertRaises(Handoff):
+                setup.main()
+            bootstrap.assert_not_called()
+            self.assertEqual(handoff.call_args.args[1], [setup.sys.executable,
+                             str(ROOT / "scripts/chroma-installer"), "--no-animation", "--preview"])
 
 
 if __name__ == "__main__":

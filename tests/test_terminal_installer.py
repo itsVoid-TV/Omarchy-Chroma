@@ -146,6 +146,13 @@ class TerminalTests(unittest.TestCase):
     def test_terminal_escape_sequences_are_not_forwarded(self):
         self.assertEqual(ui.safe("\x1b]52;c;secret\x07\x1b[31mhello\x1b[0m\u202e"), "hello")
 
+    def test_helpers_use_english_diagnostics_without_startup_hooks(self):
+        with patch.dict(os.environ, {"LC_ALL": "de_DE.UTF-8", "BASH_ENV": "/unused", "ENV": "/unused"}):
+            env = ui.child_env()
+        self.assertEqual(env["LC_ALL"], "C.UTF-8")
+        self.assertNotIn("BASH_ENV", env)
+        self.assertNotIn("ENV", env)
+
     def terminal_action(self, key, *, animation=False, columns=80):
         master, slave = pty.openpty()
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 38, columns, 0, 0))
@@ -217,6 +224,8 @@ class TerminalTests(unittest.TestCase):
         self.assertNotIn("Animation unavailable", output)
         self.assertNotIn("Animation exited unsuccessfully", output)
         self.assertNotIn("Animation could not start", output)
+        self.assertIn("\x1b[?1049h", output)
+        self.assertIn("\x1b[?1049l", output)
         self.assert_untouched()
 
 
