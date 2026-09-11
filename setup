@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""Install the Command Chroma test widget from an extracted ZIP or checkout."""
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+REPOSITORY = "https://github.com/itsVoid-TV/Omarchy-Chroma.git"
+BRANCH = "codex/command-chroma-plugin"
+PLUGIN_ID = "io.github.itsvoid-tv.command-chroma"
+TOOLS = ("git", "mv", "omarchy-git-url-check", "omarchy-plugin-validate",
+         "omarchy-plugin-catalog", "omarchy-plugin-list", "omarchy-plugin-enable",
+         "omarchy-shell")
+
+
+def paint(code, text):
+    if not sys.stdout.isatty() or os.environ.get("NO_COLOR") is not None:
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def banner():
+    violet = "38;2;169;112;255"
+    pink = "38;2;255;93;162"
+    cyan = "38;2;82;214;255"
+    print(paint(violet, "╭──────────────────────────────────────────╮"))
+    print(paint(pink, "│  >_") + "  " + paint("1;37", "COMMAND CHROMA") + "                    " + paint(cyan, "│"))
+    print(paint(violet, "│      Semantic color for every command    │"))
+    print(paint(cyan, "╰──────────────────────────────────────────╯"))
+
+
+def step(number, text):
+    print(paint("1;38;2;169;112;255", f"[{number}/4]") + " " + text)
+
+
+def run(argv, *, capture=False, timeout=30):
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    return subprocess.run(argv, stdin=subprocess.DEVNULL, text=True,
+                          capture_output=capture, check=True, timeout=timeout, env=env)
+
+
+def check_destination(directory):
+    target = directory / PLUGIN_ID
+    if target.exists() or target.is_symlink():
+        raise RuntimeError(f"Command Chroma already has a checkout at {target}.\n"
+                           f"Update it with: omarchy plugin update {PLUGIN_ID}")
+    catalog = json.loads(run(["omarchy-plugin-catalog"], capture=True).stdout)
+    if not isinstance(catalog, list):
+        raise RuntimeError("Could not read Omarchy's plugin catalog.")
+    for entry in catalog:
+        if entry.get("id") == PLUGIN_ID:
+            raise RuntimeError(f"Plugin ID {PLUGIN_ID} is already in use. "
+                               "Review the installed plugin before adding another copy.")
+
+
+def install(directory, assume_yes=False):
+    banner()
+    step(1, "Checking Omarchy and the destination…")
+    missing = [name for name in TOOLS if shutil.which(name) is None]
+    if missing:
+        raise RuntimeError("This setup needs Omarchy Quattro with its plugin commands.\n"
+                           "Missing: " + ", ".join(missing))
+    run(["omarchy-git-url-check", REPOSITORY])
+    check_destination(directory)
+    print(f"\nDevelopment source: {REPOSITORY}\nBranch: {BRANCH}")
+    print("This downloads, validates and enables the widget in your Omarchy bar.")
+    print("Omarchy plugins run as your user inside the desktop shell.")
+    print("Bash setup and its .bashrc backup are handled separately in the panel.")
+    if not assume_yes:
+        if not sys.stdin.isatty():
+            raise RuntimeError("Run ./setup in a terminal to confirm, or pass --yes explicitly.")
+        if input("Install and enable this widget? [y/N] ").strip().lower() not in ("y", "yes"):
+            print("Cancelled.")
+            return
+
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / PLUGIN_ID
+    with tempfile.TemporaryDirectory(prefix=".command-chroma-", dir=directory) as temporary:
+        stage = Path(temporary) / "repository"
+        step(2, "Downloading the development branch…")
+        run(["git", "clone", "--single-branch", "--branch", BRANCH, "--",
+             REPOSITORY, str(stage)], timeout=180)
+        step(3, "Validating the manifest and plugin files…")
+        run(["omarchy-plugin-validate", str(stage)])
+        manifest = json.loads((stage / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("id") != PLUGIN_ID:
+            raise RuntimeError("The downloaded plugin has an unexpected ID. Nothing was enabled.")
+        check_destination(directory)
+        # GNU mv refuses to replace a destination that appeared during cloning.
+        # -T also prevents nesting the checkout inside an existing directory.
+        try:
+            run(["mv", "-T", "--no-clobber", "--", str(stage), str(target)])
+        except subprocess.CalledProcessError as error:
+            if target.exists() or target.is_symlink():
+                raise RuntimeError("The destination appeared during setup. The existing files were kept.") from error
+            raise
+        if stage.exists():
+            raise RuntimeError("The destination appeared during setup. The existing files were kept.")
+
+    try:
+        step(4, "Registering and enabling the Chroma widget…")
+        run(["omarchy-shell", "shell", "rescanPlugins"])
+        deadline = time.monotonic() + 3
+        while True:
+            plugins = json.loads(run(["omarchy-plugin-list", "--json"], capture=True).stdout)
+            if not isinstance(plugins, list):
+                raise RuntimeError("Could not read Omarchy's discovered plugins.")
+            if any(entry.get("id") == PLUGIN_ID for entry in plugins):
+                break
+            if time.monotonic() >= deadline:
+                raise RuntimeError("Omarchy has not discovered the plugin yet.")
+            time.sleep(0.05)
+        run(["omarchy-plugin-enable", PLUGIN_ID])
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
+        raise RuntimeError(f"The Git checkout was kept at {target}, but activation failed: {error}\n"
+                           "Retry these commands in your Omarchy session:\n"
+                           "  omarchy-shell shell rescanPlugins\n"
+                           f"  omarchy plugin enable {PLUGIN_ID}") from error
+    print("\n" + paint("1;38;2;82;214;255", "✓ Widget enabled."))
+    print("Click the Chroma icon, review the guided setup, and confirm.")
+    print("Then open a new Bash terminal and run: chroma doctor")
+    print("You can remove the extracted download folder; the installed checkout is independent.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--yes", action="store_true", help="confirm downloading and enabling the widget")
+    args = parser.parse_args()
+    try:
+        # Omarchy itself uses this path, independently of XDG_CONFIG_HOME.
+        install(Path.home() / ".config/omarchy/plugins", assume_yes=args.yes)
+        return 0
+    except (OSError, RuntimeError, ValueError, EOFError, subprocess.SubprocessError) as error:
+        print(f"Command Chroma setup: {error}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nSetup interrupted. Any installed checkout is kept; inspect it before retrying.", file=sys.stderr)
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

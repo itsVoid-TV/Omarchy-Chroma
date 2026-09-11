@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="1280" height="720" rx="28" fill="#f3f1f6"/>
+  <rect x="36" y="36" width="1208" height="648" rx="20" fill="none" stroke="#7c4dcc" stroke-width="4" stroke-dasharray="18 14"/>
+  <text x="640" y="318" fill="#27232d" font-family="sans-serif" font-size="42" font-weight="700" text-anchor="middle">DASHBOARD SCREENSHOT</text>
+  <text x="640" y="374" fill="#625d69" font-family="sans-serif" font-size="25" text-anchor="middle">Replace with docs/images/dashboard.webp</text>
+  <text x="640" y="416" fill="#7c4dcc" font-family="monospace" font-size="21" text-anchor="middle">Enabled state · theme and contrast visible</text>
+</svg>

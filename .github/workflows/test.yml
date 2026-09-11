@@ -55,5 +55,7 @@ jobs:
             chroma-dark.png
             chroma-light.png
             chroma-narrow.png
+            chroma-installer-welcome.png
+            chroma-installer-review.png
           if-no-files-found: ignore
           retention-days: 7

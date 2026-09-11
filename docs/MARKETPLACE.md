@@ -18,7 +18,8 @@ projects. Recheck permanent-ID availability before submitting.
 1. Complete the real-device acceptance checklist in `PLUGIN_TESTING.md`.
 2. Review the final CI results and record the exact tested commit SHA.
 3. Merge the reviewed plugin to the repository's default branch; update the
-   README with the standard `omarchy plugin add` install flow at that time.
+   development ZIP wording and `setup` branch constant at that time. The README
+   already contains the standard `omarchy plugin add … --enable` release flow.
 4. Add an actual, representative preview screenshot without personal data.
 5. Re-read the current Marketplace submission/security rules and submit the
    exact final revision. An automated validation pass is not approval or a
@@ -27,6 +28,10 @@ projects. Recheck permanent-ID availability before submitting.
 ## Facts for the maintainer notes
 
 - Native Quattro bar-widget entry point with a real control panel.
+- Guided, branded first-run UI with a semantic-color preview, explicit review,
+  progress/error/success states and a clear handoff to the dashboard.
+- Development ZIP bootstrap creates a validated, updateable Git checkout; the
+  release installation remains Omarchy's standard `plugin add` command.
 - Bash 4.4+, ble.sh, Python 3 standard library, coreutils/awk and util-linux.
 - No sudo, system package installation, telemetry, or terminal-history access.
 - Enabling the widget does not install anything or edit `.bashrc`.

@@ -27,6 +27,7 @@ bash "$root/tests/test_parser.bash"
 bash "$root/tests/test_theme.bash"
 bash "$root/tests/test_install.bash"
 python3 "$root/tests/test_plugin.py"
+python3 "$root/tests/test_setup.py"
 node "$root/tests/test_model.js"
 
 if [[ ${CHROMA_QMLTESTRUNNER:-} ]]; then

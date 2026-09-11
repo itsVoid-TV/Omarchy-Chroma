@@ -1,6 +1,7 @@
 # Command Chroma
 
-Theme-aware semantic command colors for the stock **Omarchy Bash terminal**, with an Omarchy Quattro bar widget and control panel.
+Theme-aware semantic Bash command highlighting for **Omarchy**, with a guided
+first-run setup, readable contrast, diagnostics, and a native Quattro control panel.
 
 Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
@@ -10,9 +11,48 @@ been renamed.
 > It is not a Marketplace listing or a stable release. To try this branch,
 > follow [plugin testing and installation](docs/PLUGIN_TESTING.md).
 
+## Quick start for the development branch
+
+Because the plugin is not on `main` yet, Omarchy's normal add command cannot
+select this development branch. For testing, download and extract the
+[development ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/codex/command-chroma-plugin.zip),
+open a terminal inside its folder, and run:
+
+```bash
+./setup
+```
+
+If the archive tool removed executable permissions, use `python3 setup`.
+The colorful bootstrap validates the plugin and creates a real Git checkout,
+so later updates work through Omarchy. It does not touch `.bashrc`.
+
+Once this branch has passed the real-device checklist and is merged, the normal
+installation will be one standard Omarchy command:
+
+```bash
+omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
+```
+
+Omarchy deliberately does not execute install hooks. The command adds and
+enables the widget; clicking its Chroma logo opens the guided installer. The
+installer shows every planned change before its final confirmation.
+
+## Preview
+
+![Command Chroma guided installer screenshot placeholder](docs/images/installer-placeholder.svg)
+
+![Command Chroma dashboard screenshot placeholder](docs/images/dashboard-placeholder.svg)
+
+![Command Chroma terminal highlighting screenshot placeholder](docs/images/terminal-placeholder.svg)
+
+These are deliberate placeholders, not generated product screenshots. See
+[the image checklist](docs/images/README.md) for exactly what to capture and
+where to put it.
+
 ## Omarchy plugin
 
-The terminal icon opens a theme-aware control panel with:
+The Chroma logo opens a theme-aware first-run installer or, after setup, the
+control panel with:
 
 - installation/enabled status **for new Bash terminals**, plus update detection;
 - the active Omarchy theme, background, calculated minimum contrast and target;
@@ -21,10 +61,12 @@ The terminal icon opens a theme-aware control panel with:
 - `.bashrc` backups and a removal action that preserves config and `ble.sh`.
 
 Adding/enabling the widget does not install the Bash add-on, download
-dependencies, or change `.bashrc`. Choose **Set up / update** and confirm first.
-That action installs the code from the checked-out plugin revision, not a
-second clone of mutable `main`. After a plugin update, choose **Set up / update**
-again if the panel reports a Bash update.
+dependencies, or change `.bashrc`. The guided installer first shows its command
+preview, destination, `.bashrc` loader, backup policy and optional pinned ble.sh
+download. Only its final **Install Command Chroma** button performs setup. It
+installs code from the checked-out plugin revision, not a second clone of
+mutable `main`. After a plugin update, open **Set up / update** if the dashboard
+reports a Bash update.
 
 The plugin ID is `io.github.itsvoid-tv.command-chroma`. The supported host is
 Omarchy **Quattro / 4.x** with `qs.Ui.BarWidget`, `Panel`, and `KeyboardPanel`.
@@ -74,8 +116,12 @@ terminal color otherwise.
 
 ## Standalone Bash installation
 
+For Bash highlighting without the Omarchy widget, download and extract the
+[standalone `main` ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
+open a terminal inside that folder, and run:
+
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/itsVoid-TV/omarchy-chroma/main/install.sh)"
+bash install.sh
 ```
 
 Then open a new terminal and check the installation:
@@ -103,12 +149,12 @@ working installation. Existing configuration and symlinked `.bashrc` files are
 preserved. If `ble.sh` is missing, Chroma downloads one pinned build and
 verifies its SHA-256 checksum before installing it locally.
 
-Prefer reviewing before running? Clone the repository first:
+If you prefer an updateable Git checkout:
 
 ```bash
-git clone https://github.com/itsVoid-TV/omarchy-chroma.git
-cd omarchy-chroma
-./install.sh
+git clone https://github.com/itsVoid-TV/Omarchy-Chroma.git
+cd Omarchy-Chroma
+bash install.sh
 ```
 
 ## Colors
@@ -193,14 +239,18 @@ or contrast settings fall back safely and are listed by `chroma doctor`.
 
 ## Update
 
-Re-run the installer; your config file is preserved and the installed code is
-replaced as one complete unit:
+For the plugin, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-the-development-checkout),
+then choose **Set up / update** in the dashboard when it reports a Bash update.
+
+For the standalone version, download and extract a current `main` ZIP and run
+this from its folder. Your config file is preserved and the code is replaced as
+one complete unit:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/itsVoid-TV/omarchy-chroma/main/install.sh)"
+bash install.sh
 ```
 
-For a cloned checkout, use `git pull` and run `./install.sh` again.
+For a cloned checkout, use `git pull --ff-only` and run `bash install.sh` again.
 
 ## Uninstall
 

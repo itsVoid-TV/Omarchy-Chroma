@@ -5,7 +5,7 @@
   "version": "0.4.0",
   "author": "itsVoid-TV",
   "license": "MIT",
-  "description": "Theme-aware Bash command colors with opt-in setup, diagnostics, and a control panel.",
+  "description": "Theme-aware semantic Bash command highlighting with a guided setup, accessible contrast, diagnostics, and a native control panel.",
   "kinds": ["bar-widget"],
   "entryPoints": { "barWidget": "BarWidget.qml" },
   "barWidget": {

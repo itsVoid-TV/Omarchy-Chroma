@@ -3,6 +3,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui as Ui
 import "Model.js" as Model
+import "ui" as ChromaUi
 
 Ui.BarWidget {
   id: root
@@ -58,7 +59,14 @@ Ui.BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: "\uf120"
+    text: ""
+    iconComponent: Component {
+      ChromaUi.BrandMark {
+        foreground: root.bar ? root.bar.foreground : Color.foreground
+        surface: root.bar ? root.bar.background : Color.background
+        violet: Color.accent
+      }
+    }
     slotSize: Style.bar.statusSlot
     fontSize: Style.font.body
     tooltipText: "Command Chroma · " + Model.statusLabel(controlBackend.snapshot)

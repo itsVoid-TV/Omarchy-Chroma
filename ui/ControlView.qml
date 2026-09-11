@@ -17,9 +17,20 @@ FocusScope {
   property int fontSize: 13
   property string pendingAction: ""
   property bool showLegend: false
+  property bool setupFlowActive: false
   readonly property var paletteInfo: snapshot.palette || ({})
   signal requested(string action, bool confirmed)
   signal closeRequested()
+
+  function beginSetup() {
+    root.pendingAction = "";
+    root.setupFlowActive = true;
+  }
+
+  function leaveSetup() {
+    if (root.snapshot.installed === true) root.setupFlowActive = false;
+    else root.closeRequested();
+  }
 
   function choose(action) {
     if (root.busy) return;
@@ -40,14 +51,43 @@ FocusScope {
   }
 
   Keys.onEscapePressed: function(event) {
+    if (root.setupFlowActive) {
+      setupWizard.goBack();
+      event.accepted = true;
+      return;
+    }
     if (root.pendingAction) root.pendingAction = "";
     else root.closeRequested();
     event.accepted = true;
   }
 
+  onSnapshotChanged: {
+    if (snapshot.state === "not-installed") root.setupFlowActive = true;
+  }
+
+  SetupView {
+    id: setupWizard
+    anchors.fill: parent
+    visible: root.setupFlowActive
+    active: root.setupFlowActive
+    snapshot: root.snapshot
+    busy: root.busy
+    failed: root.failed
+    message: root.message
+    output: root.output
+    ink: root.ink
+    surface: root.surface
+    accent: root.accent
+    fontFamily: root.fontFamily
+    fontSize: root.fontSize
+    onRequested: function(action, confirmed) { root.requested(action, confirmed); }
+    onDismissRequested: root.leaveSetup()
+  }
+
   ScrollView {
     id: scroll
     anchors.fill: parent
+    visible: !root.setupFlowActive
     clip: true
     contentWidth: availableWidth
     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
@@ -158,7 +198,10 @@ FocusScope {
             emphasized: modelData.action === "setup" && (root.snapshot.installed !== true || root.snapshot.updateAvailable === true)
             font { family: root.fontFamily; pixelSize: root.fontSize }
             enabled: !root.busy && !root.pendingAction && (root.snapshot.installed || ["setup", "legend", "inspect"].indexOf(modelData.action) >= 0)
-            onClicked: root.choose(modelData.action)
+            onClicked: {
+              if (modelData.action === "setup") root.beginSetup();
+              else root.choose(modelData.action);
+            }
           }
         }
       }

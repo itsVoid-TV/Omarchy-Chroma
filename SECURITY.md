@@ -27,6 +27,12 @@ explicit confirmation; setup uses the bundled checkout and saves a `.bashrc`
 backup. No plugin action calls sudo or installs system packages. Setup can
 download the pinned, SHA-256-verified ble.sh archive from GitHub when missing.
 
+Omarchy's `plugin add` intentionally never executes plugin hooks. Chroma does
+not bypass that boundary: its first-run installer is UI only until the user
+reviews the changes and presses the final install button. The separate `./setup`
+development bootstrap only clones, validates and enables the widget; it does
+not install the Bash engine or touch `.bashrc`.
+
 The Python bridge invokes fixed argv lists, serializes mutations with a lock,
 and bounds helper execution time. It removes BASH_ENV/ENV from helper
 environments and never sources `.bashrc`. Palette inspection and the explicit

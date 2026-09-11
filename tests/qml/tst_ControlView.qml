@@ -28,6 +28,7 @@ Rectangle {
       view.surface = "#171717";
       view.pendingAction = "";
       view.showLegend = false;
+      view.setupFlowActive = false;
       view.busy = false;
       view.message = "";
       view.output = "";
@@ -36,18 +37,49 @@ Rectangle {
       wait(20);
     }
 
-    function test_setup_requires_confirm() {
+    function test_dashboard_setup_opens_guided_review() {
       var setup = findChild(view, "action-setup");
       verify(setup);
       mouseClick(setup);
-      compare(view.pendingAction, "setup");
+      compare(view.setupFlowActive, true);
       compare(requestSpy.count, 0);
       wait(20);
-      mouseClick(findChild(view, "confirm"));
+      mouseClick(findChild(view, "setup-next"));
+      compare(requestSpy.count, 0);
+      mouseClick(findChild(view, "setup-install"));
       compare(requestSpy.count, 1);
       compare(requestSpy.signalArguments[0][0], "setup");
       compare(requestSpy.signalArguments[0][1], true);
-      compare(view.pendingAction, "");
+    }
+
+    function test_first_install_success_and_retry_routes() {
+      view.snapshot = {state: "not-installed", installed: false, enabled: false,
+        pluginVersion: "0.4.0", bashrc: "/home/example/.bashrc",
+        installPath: "/home/example/.local/share/omarchy-chroma", blePath: "",
+        palette: {name: "Vantablack", mode: "dark", background: "#000000", minimum: "5.5", worst: "5.512"},
+        legend: [{category: "install", color: "#cecece"}, {category: "danger", color: "#ff6b7a"},
+                 {category: "network", color: "#63d4ed"}, {category: "inspect", color: "#b8c0ff"}]};
+      wait(20);
+      compare(view.setupFlowActive, true);
+      mouseClick(findChild(view, "setup-next"));
+      mouseClick(findChild(view, "setup-install"));
+      compare(requestSpy.signalArguments[0][0], "setup");
+      compare(requestSpy.signalArguments[0][1], true);
+      view.failed = true;
+      view.message = "Fixture failure";
+      wait(20);
+      verify(findChild(view, "setup-retry").visible);
+      mouseClick(findChild(view, "setup-retry"));
+      compare(requestSpy.count, 2);
+      view.failed = false;
+      view.snapshot = {state: "enabled", installed: true, enabled: true,
+        pluginVersion: "0.4.0", installedVersion: "0.4.0",
+        palette: {name: "Vantablack", mode: "dark", background: "#000000", minimum: "5.5", worst: "5.512"}};
+      wait(20);
+      var done = findChild(view, "setup-done");
+      verify(done.visible);
+      mouseClick(done);
+      compare(view.setupFlowActive, false);
     }
 
     function test_cancel_has_no_action() {
@@ -106,6 +138,24 @@ Rectangle {
       compare(narrow.width, 360);
       narrow.save("chroma-narrow.png");
       verify(findChild(view, "action-setup").width > 80);
+    }
+
+    function test_render_installer_welcome_and_review() {
+      view.snapshot = {state: "not-installed", installed: false, enabled: false,
+        pluginVersion: "0.4.0", bashrc: "/home/example/.bashrc",
+        installPath: "/home/example/.local/share/omarchy-chroma", blePath: "",
+        palette: {name: "Vantablack", mode: "dark", background: "#000000", minimum: "5.5", worst: "5.512"},
+        legend: [{category: "install", color: "#cecece"}, {category: "danger", color: "#ff6b7a"},
+                 {category: "network", color: "#63d4ed"}, {category: "inspect", color: "#b8c0ff"}]};
+      wait(20);
+      var welcome = grabImage(scene);
+      compare(welcome.width, 600);
+      welcome.save("chroma-installer-welcome.png");
+      mouseClick(findChild(view, "setup-next"));
+      wait(20);
+      var review = grabImage(scene);
+      verify(!review.equals(welcome));
+      review.save("chroma-installer-review.png");
     }
   }
 }

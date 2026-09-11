@@ -6,29 +6,33 @@ Marketplace entry. The repository is still `itsVoid-TV/Omarchy-Chroma`.
 ## Try the plugin branch on Omarchy Quattro
 
 Review the source first. Omarchy plugins run unsandboxed in your desktop shell.
-The following block refuses to replace an existing plugin directory:
+Download and extract the
+[development ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/codex/command-chroma-plugin.zip),
+then open a terminal inside its folder:
 
 ```bash
-chroma_plugin_dir="$HOME/.config/omarchy/plugins/io.github.itsvoid-tv.command-chroma"
-if [[ -e $chroma_plugin_dir || -L $chroma_plugin_dir ]]; then
-  printf 'Already present: %s\nReview/update that checkout instead.\n' "$chroma_plugin_dir"
-else
-  git clone --branch codex/command-chroma-plugin \
-    https://github.com/itsVoid-TV/Omarchy-Chroma.git "$chroma_plugin_dir" &&
-  omarchy plugin validate "$chroma_plugin_dir" &&
-  omarchy-shell shell rescanPlugins &&
-  omarchy plugin enable io.github.itsvoid-tv.command-chroma
-fi
+./setup
 ```
 
-Click the terminal icon. **Set up / update** explains the changes and asks for
-confirmation. Cancel makes no changes. Confirm backs up `.bashrc`, installs
-the bundled Bash code, and downloads the pinned ble.sh only if needed. A
-previous Chroma config is preserved. Open a new Bash terminal after setup.
+Use `python3 setup` if the executable bit was lost while extracting. The
+bootstrap displays the repository and branch, asks before downloading, validates
+the manifest, refuses existing directories or duplicate IDs, and enables the
+widget. It clones an independent Git checkout, so the extracted folder can be
+deleted afterwards and Omarchy updates continue to work.
+
+Click the Chroma logo. The guided installer previews the colors and then shows
+the destination, `.bashrc` loader, backup policy and optional dependency before
+asking for final confirmation. Back or Escape makes no Bash changes. Install
+backs up `.bashrc`, installs the bundled Bash code, and downloads the pinned
+ble.sh only if needed. Previous Chroma configuration is preserved. Open a new
+Bash terminal after setup.
 
 No repository rename is needed to use the new display name or plugin ID. Do
 not use `omarchy plugin add` against default `main` until the plugin has actually
 been merged there; `main` is currently the standalone Bash implementation.
+Also note that Omarchy's add command intentionally never executes plugin hooks;
+after the future `omarchy plugin add … --enable`, the user opens the logo to
+start this guided installer.
 
 ## Update the development checkout
 
@@ -42,6 +46,10 @@ code. The installed copy remains usable if the widget checkout is removed.
 
 ## Acceptance checklist on a real Omarchy session
 
+- [ ] Extracting the ZIP and running `./setup` shows its colored banner, asks
+  before cloning, enables the widget, and leaves `.bashrc` untouched.
+- [ ] First opening shows the welcome page; Back/Escape is non-mutating, the
+  review paths are correct, failure can be retried, and success opens the dashboard.
 - [ ] Plugin validate, enable, disable, re-enable and remove behave correctly.
 - [ ] The icon opens and closes its panel on top/bottom/left/right bars.
 - [ ] Escape closes it, Tab navigates buttons, outside-click and switching to
@@ -91,6 +99,8 @@ bash tests/run.bash
 ```
 
 Python 3 and Node run the bridge/model tests without third-party packages.
+The development bootstrap tests use real local Git repositories plus a simulated
+Omarchy host to cover cancel, validation, collisions, branch updates and recovery.
 ShellCheck, the pinned ble.sh and the pinned upstream palettes enable further
 checks. Qt rendering tests require Qt 6 Quick/Controls/Layouts/QtTest modules:
 

@@ -2,6 +2,10 @@
 
 ## 0.4.0 — Command Chroma plugin (development)
 
+- Added a branded, theme-aware first-run installer with command-color preview,
+  transparent change review, progress, retry and completion states.
+- Added a short colored `./setup` bootstrap for testing the non-default branch;
+  it creates a validated Git checkout without modifying Bash configuration.
 - Added an Omarchy Quattro bar-widget manifest, terminal icon and native panel.
 - Added opt-in setup/update, enable/disable for new shells, theme refresh,
   isolated Doctor, color legend and separate Bash removal.
