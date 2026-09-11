@@ -297,15 +297,18 @@ FocusScope {
               anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
               Text {
                 Layout.fillWidth: true
-                text: modelData.category.toUpperCase() + "  ·  " + modelData.example
+                text: String(modelData.category || "other").toUpperCase() + "  ·  " + String(modelData.example || "")
                 textFormat: Text.PlainText
                 color: modelData.color || root.ink
-                font { family: "monospace"; pixelSize: root.fontSize; bold: true; underline: modelData.style.indexOf("underline") >= 0 }
+                font { family: "monospace"; pixelSize: root.fontSize; bold: true; underline: String(modelData.style || "").indexOf("underline") >= 0 }
                 wrapMode: Text.WordWrap
               }
               Text {
                 Layout.fillWidth: true
-                text: modelData.style + (modelData.ratio !== "unknown" ? " · " + modelData.ratio + ":1" : " · custom/indexed style; no measured preview")
+                text: (modelData.style || "plain")
+                      + (modelData.ratio && modelData.ratio !== "unknown"
+                         ? " · " + modelData.ratio + ":1"
+                         : " · custom/indexed style; no measured preview")
                 textFormat: Text.PlainText
                 color: modelData.color || root.ink
                 font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
