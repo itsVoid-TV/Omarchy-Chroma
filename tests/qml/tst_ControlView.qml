@@ -61,6 +61,7 @@ Rectangle {
                  {category: "network", color: "#63d4ed"}, {category: "inspect", color: "#b8c0ff"}]};
       wait(20);
       compare(view.setupFlowActive, true);
+      compare(findChild(view, "setup-wizard").initiallyInstalled, false);
       mouseClick(findChild(view, "setup-next"));
       mouseClick(findChild(view, "setup-install"));
       compare(requestSpy.signalArguments[0][0], "setup");
@@ -148,6 +149,7 @@ Rectangle {
         legend: [{category: "install", color: "#cecece"}, {category: "danger", color: "#ff6b7a"},
                  {category: "network", color: "#63d4ed"}, {category: "inspect", color: "#b8c0ff"}]};
       wait(20);
+      compare(findChild(view, "setup-wizard").initiallyInstalled, false);
       var welcome = grabImage(scene);
       compare(welcome.width, 600);
       welcome.save("chroma-installer-welcome.png");

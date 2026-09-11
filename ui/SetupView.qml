@@ -51,6 +51,14 @@ FocusScope {
   }
 
   onActiveChanged: if (active) reset()
+  onSnapshotChanged: {
+    // ControlView can activate the wizard in the same update that replaces an
+    // installed snapshot with the first-install snapshot. Keep the welcome
+    // copy in sync until the user actually submits the setup.
+    if (active && !submitted && page === 0) {
+      initiallyInstalled = snapshot.installed === true;
+    }
+  }
   onSucceededChanged: if (succeeded) page = 2
 
   Keys.onEscapePressed: function(event) {

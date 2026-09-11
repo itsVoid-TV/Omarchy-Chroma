@@ -67,6 +67,7 @@ FocusScope {
 
   SetupView {
     id: setupWizard
+    objectName: "setup-wizard"
     anchors.fill: parent
     visible: root.setupFlowActive
     active: root.setupFlowActive
