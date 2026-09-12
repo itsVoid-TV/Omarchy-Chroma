@@ -74,6 +74,14 @@ package is installed. On narrow terminals the logo becomes a compact `>_` mark.
 
 ## Preview
 
+![Actual Command Chroma terminal installer in safe preview mode](docs/images/installer-terminal-preview.png)
+
+Actual terminal capture from xterm/Xvfb, using the real `ttfx` engine before the
+review screen. This is the installer's safe preview mode, not an AI-generated
+mockup or a native Omarchy/Wayland screenshot. Reproduce it with `./setup --preview`.
+
+The following slots are reserved for your final on-device Omarchy gallery:
+
 ![Command Chroma terminal installer screenshot placeholder](docs/images/installer-placeholder.svg)
 
 ![Command Chroma dashboard screenshot placeholder](docs/images/dashboard-placeholder.svg)

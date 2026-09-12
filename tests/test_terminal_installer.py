@@ -146,6 +146,22 @@ class TerminalTests(unittest.TestCase):
     def test_terminal_escape_sequences_are_not_forwarded(self):
         self.assertEqual(ui.safe("\x1b]52;c;secret\x07\x1b[31mhello\x1b[0m\u202e"), "hello")
 
+    def test_interrupt_before_effect_start_restores_original_screen(self):
+        terminal = ui.Terminal()
+        terminal.interactive = terminal.color = True
+        terminal.width = 80
+        output = io.StringIO()
+        with patch.object(ui.shutil, "which", return_value="ttfx"), \
+                patch("sys.stdout", new=output), \
+                patch.object(terminal, "say", side_effect=KeyboardInterrupt), \
+                patch.object(ui.subprocess, "Popen") as spawn:
+            with self.assertRaises(KeyboardInterrupt):
+                terminal.animate()
+        spawn.assert_not_called()
+        self.assertIn("\x1b[?1049h", output.getvalue())
+        self.assertIn("\x1b[?1049l", output.getvalue())
+        self.assertIn("\x1b[?25h", output.getvalue())
+
     def test_helpers_use_english_diagnostics_without_startup_hooks(self):
         with patch.dict(os.environ, {"LC_ALL": "de_DE.UTF-8", "BASH_ENV": "/unused", "ENV": "/unused"}):
             env = ui.child_env()

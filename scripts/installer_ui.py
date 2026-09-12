@@ -113,10 +113,10 @@ class Terminal:
             return False
         # Keep the transient effect off the user's scrollback, then return to
         # the original buffer for one clean, persistent review page.
-        print("\033[?1049h\033[H", end="", flush=True)
-        self.say("COMMAND CHROMA  /  Enter skips the intro · Esc cancels", "52d6ff")
         process = None
         try:
+            print("\033[?1049h\033[H", end="", flush=True)
+            self.say("COMMAND CHROMA  /  Enter skips the intro · Esc cancels", "52d6ff")
             with keyboard() as descriptor:
                 process = subprocess.Popen(effect_command(binary), stdin=subprocess.DEVNULL,
                                            stderr=subprocess.DEVNULL, env=child_env(),

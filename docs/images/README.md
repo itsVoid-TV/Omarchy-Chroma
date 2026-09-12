@@ -4,6 +4,15 @@ The three SVG files in this folder are layout placeholders, not generated
 screenshots. Before a Marketplace submission, replace each README reference
 with the matching real WebP image below.
 
+## Included terminal preview
+
+`installer-terminal-preview.png` is an unedited capture of the actual installer
+running in xterm under Xvfb, after the real `ttfx` intro. It was captured by
+`tests/capture_terminal.py` in the [verified CI run](https://github.com/itsVoid-TV/Omarchy-Chroma/actions/runs/34593647649)
+for commit `2f6bdb2cb7eade224a8f28499c77ddcb7f4e8429`.
+It uses safe preview mode and neutral sample paths. It is not a native Omarchy
+screenshot; keep the gallery placeholders until you capture the images below.
+
 ## `installer.webp`
 
 - Run `./setup --preview` in an Omarchy terminal. This shows neutral sample paths
