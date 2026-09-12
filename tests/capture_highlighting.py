@@ -70,5 +70,6 @@ def capture(theme, background, foreground):
 
 
 if __name__ == "__main__":
+    capture("catppuccin", "#1e1e2e", "#cdd6f4")
     capture("vantablack", "#000000", "#eeeeee")
     capture("white", "#ffffff", "#222222")

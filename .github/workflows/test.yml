@@ -74,6 +74,7 @@ jobs:
             chroma-narrow.png
             chroma-first-run.png
             chroma-terminal-installer.png
+            chroma-highlighting-catppuccin.png
             chroma-highlighting-vantablack.png
             chroma-highlighting-white.png
           if-no-files-found: ignore
