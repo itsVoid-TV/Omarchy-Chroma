@@ -1,13 +1,20 @@
 # Testing Command Chroma 0.4
 
-This branch is a development build, not a stable release or an approved
-Marketplace entry. The repository is still `itsVoid-TV/Omarchy-Chroma`.
+The plugin is available from `main`, but native Omarchy acceptance and Marketplace
+admission remain pending. The repository is still `itsVoid-TV/Omarchy-Chroma`.
 
-## Try the plugin branch on Omarchy Quattro
+## Try the plugin on Omarchy Quattro
+
+```bash
+omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
+```
+
+Then open the Chroma logo and choose **Set up in terminal**. Existing installations
+should update instead of running add again; see the sections below.
 
 Review the source first. Omarchy plugins run unsandboxed in your desktop shell.
-Download and extract the
-[development ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/codex/command-chroma-plugin.zip),
+As an alternative, download and extract the
+[main ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
 then open a terminal inside its folder:
 
 ```bash
@@ -36,14 +43,37 @@ Open a new Bash terminal after setup and run `chroma doctor`.
 evaluation, no writes and no downloads. `--no-animation` disables motion;
 `NO_COLOR=1` disables color and motion. Missing effects do not block installation.
 
-No repository rename is needed to use the new display name or plugin ID. Do
-not use `omarchy plugin add` against default `main` until the plugin has actually
-been merged there; `main` is currently the standalone Bash implementation.
-Also note that Omarchy's add command intentionally never executes plugin hooks;
-after the future `omarchy plugin add … --enable`, the user opens the logo and
-chooses **Set up in terminal**.
+No repository rename is needed to use the new display name or plugin ID.
+Omarchy's add command intentionally never executes plugin hooks; the terminal
+installer is opened explicitly from the panel after the widget is enabled.
 
-## Update the development checkout
+## Move an existing development checkout to main
+
+Only do this if `git branch --show-current` reports `codex/command-chroma-plugin`
+inside the installed plugin directory:
+
+```bash
+cd ~/.config/omarchy/plugins/io.github.itsvoid-tv.command-chroma
+git status --short
+git branch --show-current
+```
+
+If `git status --short` prints local changes, preserve/review them before changing
+branches. With a clean checkout, add the main tracking branch without removing
+the development branch, then switch and update:
+
+```bash
+git remote set-branches --add origin main
+git fetch origin
+git switch main
+git branch --set-upstream-to=origin/main main
+git pull --ff-only
+```
+
+Git refuses conflicting local changes or a divergent update; do not reset or
+force it. Then use the normal update command below.
+
+## Update an existing plugin
 
 ```bash
 omarchy plugin update io.github.itsvoid-tv.command-chroma
@@ -134,3 +164,12 @@ CI additionally captures the real installer in an xterm under Xvfb using
 `xvfb-run -a python3 tests/capture_terminal.py`. Its `chroma-terminal-installer.png`
 is an actual terminal screenshot in safe preview mode, not a generated mockup;
 it still does not replace the native Omarchy / Wayland acceptance checks.
+
+`tests/capture_highlighting.py` opens isolated real Bash/ble.sh sessions under
+xterm/Xvfb and types a literal example without Return. The Catppuccin, Vantablack
+and White captures contain no executed example commands or user history.
+The Catppuccin palette is copied from Omarchy commit
+`493067741e081c3b09082da6bfd51e99ec24ef00`; the other two use the existing test fixtures.
+Reproduce them with `CHROMA_BLESH_PATH=/path/to/ble.sh xvfb-run -a python3 tests/capture_highlighting.py`.
+Required capture tools are xterm, Xvfb, xauth, xdotool, xwininfo, ImageMagick and
+DejaVu Sans Mono. They are test tools, not plugin runtime dependencies.

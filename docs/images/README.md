@@ -1,52 +1,62 @@
-# Screenshot checklist
+# Screenshot guide
 
-The three SVG files in this folder are layout placeholders, not generated
-screenshots. Before a Marketplace submission, replace each README reference
-with the matching real WebP image below.
+The gallery now includes real terminal captures and actual Qt component renders.
+No image-generation model or painted terminal mockup was used. PNG files are
+copied byte-for-byte from the corresponding GitHub Actions artifacts.
 
-## Included terminal preview
+## Included images
 
-`installer-terminal-preview.png` is an unedited capture of the actual installer
-running in xterm under Xvfb, after the real `ttfx` intro. It was captured by
-`tests/capture_terminal.py` in the [verified CI run](https://github.com/itsVoid-TV/Omarchy-Chroma/actions/runs/34593647649)
-for commit `2f6bdb2cb7eade224a8f28499c77ddcb7f4e8429`.
-It uses safe preview mode and neutral sample paths. It is not a native Omarchy
-screenshot; keep the gallery placeholders until you capture the images below.
+| File | What it actually shows | Source |
+| --- | --- | --- |
+| `installer-terminal-preview.png` | xterm/Xvfb, after the real ttfx intro, in read-only preview mode | [CI 34593647649](https://github.com/itsVoid-TV/Omarchy-Chroma/actions/runs/34593647649), commit `2f6bdb2cb7eade224a8f28499c77ddcb7f4e8429` |
+| `highlighting-catppuccin.png` | Real Bash/ble.sh editing with Omarchy's colorful Catppuccin palette | [CI 34716371852](https://github.com/itsVoid-TV/Omarchy-Chroma/actions/runs/34716371852), commit `35df92190422b240573956ca314b45f126ae654f` |
+| `highlighting-vantablack.png` | Real Bash/ble.sh editing on the black theme fixture | [CI 34716085992](https://github.com/itsVoid-TV/Omarchy-Chroma/actions/runs/34716085992), commit `55ec7307d178e9bd462772f95339e40f3771d222` |
+| `highlighting-white.png` | Real Bash/ble.sh editing on the white theme fixture | Same run as Vantablack |
+| `dashboard-dark-preview.png` | Shipped Qt control view with dark sample status and contrast data | Same run as Vantablack |
+| `dashboard-light-preview.png` | Shipped Qt control view with light sample data and a disabled state | Same run as Vantablack |
+| `dashboard-first-run-preview.png` | Shipped Qt control view before installation, with sample data | Same run as Vantablack |
+| `../../preview.png` | Exact copy of the installer capture for the Marketplace's root preview slot | Same bytes as `installer-terminal-preview.png` |
 
-## `installer.webp`
+Terminal captures have no user startup files or history. The example is typed
+into the actual line editor without Return; no package, network, Git or removal
+command in that example is executed. `chroma legend` is actual Chroma output.
+The Qt dashboard values are fixtures, not measurements of a real desktop.
 
-- Run `./setup --preview` in an Omarchy terminal. This shows neutral sample paths
-  without reading config, downloading anything, or installing Chroma.
-- Capture the terminal after the ttfx logo animation, with the Chroma wordmark,
-  English review and safety notice visible. Use roughly 100 columns × 38 rows.
-- Use Vantablack or another recognizably dark Omarchy theme.
-- Crop to the terminal with a small amount of desktop context. Target roughly 1280×720.
-- Do not show usernames, home paths, notifications, tokens or unrelated apps.
+The Catppuccin fixture is copied from [Omarchy's palette at the pinned theme
+commit](https://github.com/omacom/omarchy/blob/493067741e081c3b09082da6bfd51e99ec24ef00/themes/catppuccin/colors.toml).
+Black and white fixtures intentionally preserve their monochrome appearance.
 
-## `dashboard.webp`
+## Still needed: one native Omarchy desktop image
 
-- Finish setup, open a new terminal, and make sure `chroma doctor` passes first.
-- Capture the enabled dashboard with theme name, contrast values and all actions
-  visible. A light Omarchy theme gives the gallery useful visual variety.
-- Hide or crop personal filesystem paths and notifications.
+Save an actual on-device capture as **`docs/images/omarchy-desktop.webp`**:
 
-## `terminal.webp`
+1. Install/update Chroma and complete **Set up in terminal**.
+2. Open a new Bash terminal and check `chroma doctor`.
+3. Open the Chroma dashboard from its icon in the Omarchy bar.
+4. Capture the bar icon and open dashboard together. Keep the theme name and
+   contrast/status visible, with enough surrounding desktop to show placement.
+5. Hide notifications and personal paths; aim for readable text around 1280×720.
 
-- Use a clean terminal with a neutral prompt and no command history.
-- Type safe examples without executing them, such as `pacman -Syu`,
-  `git status`, `curl https://example.com`, and `command -v rm`.
-- Include `chroma legend` only if the result fits without making text tiny.
-- Never stage a real destructive command containing a personal path.
+In the root README, replace `docs/images/dashboard-placeholder.svg` with
+`docs/images/omarchy-desktop.webp`, and update its caption to name the actual
+Omarchy version/theme. Keep a native capture separate from the Qt sample renders.
 
-After adding the real files, change these README paths:
+An additional native installer image is optional: run `./setup --preview` in
+your Omarchy terminal, capture the English review after the logo animation, and
+save it as `docs/images/installer.webp`. The existing real xterm screenshot already
+illustrates the terminal installer itself.
 
-- `docs/images/installer-placeholder.svg` → `docs/images/installer.webp`
-- `docs/images/dashboard-placeholder.svg` → `docs/images/dashboard.webp`
-- `docs/images/terminal-placeholder.svg` → `docs/images/terminal.webp`
+The older installer/terminal SVG placeholders remain available for layout work,
+but the README no longer displays them. Do not relabel Qt fixtures as native
+Omarchy screenshots or mark Wayland/multi-monitor acceptance complete from PNGs.
 
-Keep the placeholders until every replacement has been reviewed at GitHub's
-rendered README size. Do not claim offscreen Qt test renders are real Omarchy
-screenshots. CI also captures the actual terminal installer in xterm/Xvfb via
-`tests/capture_terminal.py` and publishes `chroma-terminal-installer.png` in the
-render artifact. It is a real terminal screenshot in preview mode, not an AI
-image, but not evidence of native Omarchy / Wayland behavior.
+## Reproduce the captures
+
+```bash
+xvfb-run -a python3 tests/capture_terminal.py
+CHROMA_BLESH_PATH=/path/to/ble.sh xvfb-run -a python3 tests/capture_highlighting.py
+```
+
+Use the pinned ble.sh build and capture dependencies recorded in
+`.github/workflows/test.yml`. The workflow runs both commands and retains the
+resulting images for seven days; the reviewed gallery copies are versioned here.

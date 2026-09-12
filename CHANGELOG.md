@@ -2,6 +2,12 @@
 
 ## 0.4.0 — Command Chroma plugin (development)
 
+- Prepared publication on main with the standard Omarchy add command, a main
+  ZIP bootstrap and a documented transition for existing development checkouts.
+- Added verified terminal captures in Catppuccin, Vantablack and White, clearly
+  labelled Qt dashboard examples, root Marketplace preview and a sourced review.
+- Prepared a Marketplace request with native-device limitations disclosed;
+  owner checklist/text approval and Marketplace admission remain pending.
 - Moved the first-run installer entirely into the terminal, in English, using
   Omarchy's `ttfx` screensaver engine (original `tte` fallback) for the Chroma logo.
 - Added review, explicit terminal consent, real progress, visible errors, safe

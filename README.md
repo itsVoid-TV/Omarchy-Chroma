@@ -7,15 +7,27 @@ Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
-> Plugin 0.4.0 is currently developed on `codex/command-chroma-plugin`.
-> It is not a Marketplace listing or a stable release. To try this branch,
-> follow [plugin testing and installation](docs/PLUGIN_TESTING.md).
+> Plugin 0.4.0 is available from `main`. Marketplace admission and native
+> Omarchy acceptance are pending; no stable release is tagged yet. See the
+> [verification report](docs/REVIEW-2026-09-12.md) and [device checklist](docs/PLUGIN_TESTING.md).
 
-## Quick start for the development branch
+## Install on Omarchy Quattro
 
-Because the plugin is not on `main` yet, Omarchy's normal add command cannot
-select this development branch. For testing, download and extract the
-[development ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/codex/command-chroma-plugin.zip),
+Add and enable the plugin:
+
+```bash
+omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
+```
+
+Click the Chroma logo in your bar, then **Set up in terminal**. The English
+installer reviews the Bash changes and asks for confirmation. Open a new Bash
+terminal after installation and run `chroma doctor`.
+
+Omarchy's add command clones and enables the widget; it deliberately does not
+execute install hooks. Adding the widget alone never changes `.bashrc`.
+
+Alternatively, download and extract the
+[main ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
 open a terminal inside its folder, and run:
 
 ```bash
@@ -41,16 +53,9 @@ For a safe visual preview (no config reads, downloads or changes):
 ./setup --preview
 ```
 
-Once this branch has passed the real-device checklist and is merged, the normal
-installation will be one standard Omarchy command:
-
-```bash
-omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
-```
-
-Omarchy deliberately does not execute install hooks. The command adds and
-enables the widget. Click its Chroma logo, then **Set up in terminal**. The
-terminal installer shows every planned change before its final confirmation.
+Already installed from the development branch? Follow the
+[one-time switch to main](docs/PLUGIN_TESTING.md#move-an-existing-development-checkout-to-main)
+before using normal plugin updates.
 
 ## The terminal installer
 
@@ -72,7 +77,9 @@ Use `--no-animation` to skip motion, or `NO_COLOR=1 ./setup --bash` for plain
 output. Missing or failing `ttfx`/`tte` falls back to the static logo; no extra
 package is installed. On narrow terminals the logo becomes a compact `>_` mark.
 
-## Preview
+## Screenshots
+
+### English terminal installer
 
 ![Actual Command Chroma terminal installer in safe preview mode](docs/images/installer-terminal-preview.png)
 
@@ -80,17 +87,43 @@ Actual terminal capture from xterm/Xvfb, using the real `ttfx` engine before the
 review screen. This is the installer's safe preview mode, not an AI-generated
 mockup or a native Omarchy/Wayland screenshot. Reproduce it with `./setup --preview`.
 
-The following slots are reserved for your final on-device Omarchy gallery:
+### Live Bash highlighting
 
-![Command Chroma terminal installer screenshot placeholder](docs/images/installer-placeholder.svg)
+![Real Bash and ble.sh editing with the Catppuccin palette](docs/images/highlighting-catppuccin.png)
 
-![Command Chroma dashboard screenshot placeholder](docs/images/dashboard-placeholder.svg)
+Actual xterm capture with Bash, the pinned ble.sh, and Chroma loaded. The example
+is typed into the real line editor without pressing Return. `chroma legend`
+above it is real Chroma output. Theme colors come from Omarchy's pinned palette.
 
-![Command Chroma terminal highlighting screenshot placeholder](docs/images/terminal-placeholder.svg)
+<details>
+<summary>Black and white theme checks</summary>
 
-These are deliberate placeholders, not generated product screenshots. See
-[the image checklist](docs/images/README.md) for exactly what to capture and
-where to put it.
+![Live Bash highlighting on the Vantablack fixture](docs/images/highlighting-vantablack.png)
+
+![Live Bash highlighting on the White fixture](docs/images/highlighting-white.png)
+
+These monochrome fixtures intentionally retain their own hues. Chroma-managed
+foregrounds meet the contrast target; ordinary ble.sh syntax, such as URL links,
+uses its own styles and is outside that measurement.
+
+</details>
+
+### Control panel
+
+![Command Chroma control panel in Qt with dark sample data](docs/images/dashboard-dark-preview.png)
+
+Real Qt rendering of the shipped control view with **sample status and contrast
+data**, outside the Omarchy host. The [light view](docs/images/dashboard-light-preview.png)
+and [first-run view](docs/images/dashboard-first-run-preview.png) are also included.
+These captures show the component, not native bar placement or monitor behavior.
+
+### Native Omarchy desktop — capture still needed
+
+![Reserved for Chroma in the real Omarchy bar with its panel open](docs/images/dashboard-placeholder.svg)
+
+One on-device image is still needed: the Chroma icon in your Omarchy bar with
+the dashboard open. Save it as `docs/images/omarchy-desktop.webp`. See the
+[image checklist](docs/images/README.md) for exact replacements and provenance.
 
 ## Omarchy plugin
 
@@ -162,7 +195,7 @@ terminal color otherwise.
 ## Standalone Bash installation
 
 For Bash highlighting without the Omarchy widget, download and extract the
-[standalone `main` ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
+[main ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
 open a terminal inside that folder, and run:
 
 ```bash
@@ -225,7 +258,8 @@ includes `sudo`, `env`, `command`, `exec`, `time`, `timeout`, `nice`,
 sudo env LANG=C pacman -Syu firefox && git status
 ```
 
-`sudo` is orange, `pacman -Syu` is yellow, and `git status` is purple.
+With a colorful theme, `sudo` uses its orange role, `pacman -Syu` its yellow
+role, and `git status` its purple role. Monochrome themes retain grayscale hues.
 Arguments such as `firefox` keep normal `ble.sh` syntax highlighting. Query
 forms such as `command -v rm` are shown as inspection rather than falsely
 warning that `rm` will run.
@@ -284,7 +318,7 @@ or contrast settings fall back safely and are listed by `chroma doctor`.
 
 ## Update
 
-For the plugin, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-the-development-checkout),
+For the plugin, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin),
 then choose **Set up in terminal** in the dashboard when it reports a Bash update.
 
 For the standalone version, download and extract a current `main` ZIP and run
