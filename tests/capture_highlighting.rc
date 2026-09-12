@@ -1,0 +1,25 @@
+# shellcheck shell=bash
+# Isolated screenshot session: no user startup files or command history.
+[[ -r ${CHROMA_BLESH_PATH:-} && -r ${CHROMA_CAPTURE_ROOT:-}/chromarchy.bash ]] || exit 1
+HISTFILE=/dev/null
+set +o history
+PS1='chroma-demo $ '
+PS2='> '
+
+# shellcheck disable=SC1090
+source "$CHROMA_BLESH_PATH" --attach=none
+# shellcheck disable=SC1090
+source "$CHROMA_CAPTURE_ROOT/chromarchy.bash"
+[[ ${CHROMA_LAYER_READY:-0} == 1 && ${CHROMA_THEME_SOURCE:-} == omarchy ]] || exit 1
+
+clear
+printf 'COMMAND CHROMA / LIVE BASH HIGHLIGHTING\n'
+printf 'Theme: %s | Background: %s | Minimum contrast: %s:1\n\n' \
+  "$CHROMA_THEME_NAME" "$CHROMA_THEME_BACKGROUND" "$CHROMA_THEME_WORST_CONTRAST"
+printf 'chroma legend\n'
+chroma legend
+printf 'The line below is typed into ble.sh. It has not been executed.\n\n'
+
+chroma_capture_ready() { : > "$CHROMA_CAPTURE_READY"; }
+blehook PRECMD+=chroma_capture_ready
+ble-attach

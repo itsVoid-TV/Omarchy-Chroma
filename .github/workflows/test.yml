@@ -20,7 +20,7 @@ jobs:
             qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
             qml6-module-qtquick-window qml6-module-qtquick-templates \
             qml6-module-qtqml-workerscript qml6-module-qttest \
-            xterm xvfb xauth x11-utils imagemagick fonts-dejavu-core
+            xterm xvfb xauth x11-utils xdotool imagemagick fonts-dejavu-core
       - name: Build the pinned Omarchy screensaver engine
         run: |
           set -euo pipefail
@@ -59,6 +59,10 @@ jobs:
         run: bash tests/run.bash
       - name: Capture the actual terminal installer preview
         run: xvfb-run -a python3 tests/capture_terminal.py
+      - name: Capture actual Bash highlighting in dark and light themes
+        env:
+          CHROMA_BLESH_PATH: /tmp/blesh/ble.sh
+        run: xvfb-run -a python3 tests/capture_highlighting.py
       - name: Keep control-view render evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -70,5 +74,7 @@ jobs:
             chroma-narrow.png
             chroma-first-run.png
             chroma-terminal-installer.png
+            chroma-highlighting-vantablack.png
+            chroma-highlighting-white.png
           if-no-files-found: ignore
           retention-days: 7
