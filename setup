@@ -15,10 +15,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from installer_ui import Cancelled, Terminal, child_env  # noqa: E402
 
-REPOSITORY = "https://github.com/itsVoid-TV/Omarchy-Chroma.git"
-BRANCH = "main"
 PLUGIN_ID = "io.github.itsvoid-tv.command-chroma"
-TOOLS = ("git", "mv", "omarchy-git-url-check", "omarchy-plugin-validate",
+TOOLS = ("mv", "omarchy-plugin-validate",
          "omarchy-plugin-catalog", "omarchy-plugin-list", "omarchy-plugin-enable",
          "omarchy-shell")
 
@@ -39,7 +37,6 @@ def step(number, text):
 
 def run(argv, *, capture=False, timeout=30):
     env = child_env()
-    env["GIT_TERMINAL_PROMPT"] = "0"
     return subprocess.run(argv, stdin=subprocess.DEVNULL, text=True,
                           capture_output=capture, check=True, timeout=timeout, env=env)
 
@@ -48,7 +45,7 @@ def check_destination(directory):
     target = directory / PLUGIN_ID
     if target.exists() or target.is_symlink():
         raise RuntimeError(f"Command Chroma already has a checkout at {target}.\n"
-                           f"Update it with: omarchy plugin update {PLUGIN_ID}")
+                           "Update the existing installation first; see README.md.")
     catalog = json.loads(run(["omarchy-plugin-catalog"], capture=True).stdout)
     if not isinstance(catalog, list):
         raise RuntimeError("Could not read Omarchy's plugin catalog.")
@@ -65,10 +62,12 @@ def install(directory, assume_yes=False):
     if missing:
         raise RuntimeError("This setup needs Omarchy Quattro with its plugin commands.\n"
                            "Missing: " + ", ".join(missing))
-    run(["omarchy-git-url-check", REPOSITORY])
     check_destination(directory)
-    print(f"\nPlugin source: {REPOSITORY}\nBranch: {BRANCH}")
-    print("This downloads, validates and enables the widget in your Omarchy bar.")
+    if ROOT == directory.resolve() or ROOT in directory.resolve().parents:
+        raise RuntimeError("The plugin destination must be outside the source directory.")
+    print(f"\nLocal plugin source: {ROOT}")
+    print("This copies, validates and enables this local widget. No repository is downloaded.")
+    print("The copy has no Git metadata. Use Omarchy's plugin add for Git-managed updates.")
     print("Omarchy plugins run as your user inside the desktop shell.")
     print("Bash setup follows in this terminal, with a separate review and confirmation.")
     print("--yes confirms only the widget; it never silently approves Bash changes.")
@@ -83,16 +82,18 @@ def install(directory, assume_yes=False):
     target = directory / PLUGIN_ID
     with tempfile.TemporaryDirectory(prefix=".command-chroma-", dir=directory) as temporary:
         stage = Path(temporary) / "repository"
-        step(2, "Downloading the plugin…")
-        run(["git", "clone", "--single-branch", "--branch", BRANCH, "--",
-             REPOSITORY, str(stage)], timeout=180)
+        step(2, "Copying the local plugin…")
+        # A snapshot of the reviewed local files, never a new remote revision.
+        # Exclude Git metadata (including worktree pointers) and Python caches.
+        shutil.copytree(ROOT, stage, symlinks=True,
+                        ignore=shutil.ignore_patterns(".git", "__pycache__"))
         step(3, "Validating the manifest and plugin files…")
         run(["omarchy-plugin-validate", str(stage)])
         manifest = json.loads((stage / "manifest.json").read_text(encoding="utf-8"))
         if manifest.get("id") != PLUGIN_ID:
-            raise RuntimeError("The downloaded plugin has an unexpected ID. Nothing was enabled.")
+            raise RuntimeError("The local plugin has an unexpected ID. Nothing was enabled.")
         check_destination(directory)
-        # GNU mv refuses to replace a destination that appeared during cloning.
+        # GNU mv refuses to replace a destination that appeared during copying.
         # -T also prevents nesting the checkout inside an existing directory.
         try:
             run(["mv", "-T", "--no-clobber", "--", str(stage), str(target)])
@@ -118,7 +119,7 @@ def install(directory, assume_yes=False):
             time.sleep(0.05)
         run(["omarchy-plugin-enable", PLUGIN_ID])
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
-        raise RuntimeError(f"The Git checkout was kept at {target}, but activation failed: {error}\n"
+        raise RuntimeError(f"The local checkout was kept at {target}, but activation failed: {error}\n"
                            "Retry these commands in your Omarchy session:\n"
                            "  omarchy-shell shell rescanPlugins\n"
                            f"  omarchy plugin enable {PLUGIN_ID}") from error

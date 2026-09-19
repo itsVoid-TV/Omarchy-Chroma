@@ -1,4 +1,4 @@
-# Testing Command Chroma 0.4
+# Testing Command Chroma 0.4.1
 
 The plugin is available from `main`, but native Omarchy acceptance and Marketplace
 admission remain pending. The repository is still `itsVoid-TV/Omarchy-Chroma`.
@@ -22,10 +22,11 @@ then open a terminal inside its folder:
 ```
 
 Use `python3 setup` if the executable bit was lost while extracting. The
-bootstrap displays the repository and branch, asks before downloading, validates
-the manifest, refuses existing directories or duplicate IDs, and enables the
-widget. It clones an independent Git checkout, so the extracted folder can be
-deleted afterwards and Omarchy updates continue to work. Interactive setup then
+bootstrap displays the local source, asks before copying, validates the staged
+manifest/files, refuses existing directories or duplicate IDs, and enables the
+widget. It copies an independent snapshot without Git metadata; no repository
+code is downloaded. The extracted folder can be deleted afterwards. Snapshot
+updates require an explicit replacement as described below. Interactive setup then
 continues into the Bash installer **in the same terminal**, with a second consent
 prompt. `./setup --yes` installs only the widget and never bypasses Bash consent.
 
@@ -75,6 +76,8 @@ force it. Then use the normal update command below.
 
 ## Update an existing plugin
 
+For a Git checkout installed through `omarchy plugin add`:
+
 ```bash
 omarchy plugin update io.github.itsvoid-tv.command-chroma
 ```
@@ -83,10 +86,25 @@ Review the update, then open the panel and choose **Set up in terminal** if it
 shows a Bash update. Updating the widget alone never overwrites installed Bash
 code. The installed copy remains usable if the widget checkout is removed.
 
+For a ZIP snapshot installed by `./setup`, `omarchy plugin update` cannot pull
+new code because the snapshot intentionally contains no `.git`. Preserve any
+local widget changes, remove the widget with the following command, then either
+run `./setup` from a newly downloaded and reviewed source or switch to the
+Git-managed `omarchy plugin add` command above:
+
+```bash
+omarchy plugin remove io.github.itsvoid-tv.command-chroma
+```
+
+Widget removal does not uninstall the separately installed Bash code or its
+configuration. After replacing the widget, run **Set up in terminal** to update
+Bash as well. Never copy a lone `install.sh` or expect it to download Chroma:
+use a complete reviewed local source, optionally selected with `--source DIR`.
+
 ## Acceptance checklist on a real Omarchy session
 
 - [ ] Extracting the ZIP and running `./setup` shows the animated logo, asks
-  before cloning, enables the widget, and continues into a separate Bash review
+  before copying local files, enables the widget, and continues into a separate Bash review
   in the same terminal. Cancelling that review leaves `.bashrc` untouched.
 - [ ] **Set up in terminal** opens the configured Omarchy terminal. It does not
   approve Bash setup on the user's behalf, and closing the panel does not kill it.
@@ -110,6 +128,14 @@ code. The installed copy remains usable if the widget checkout is removed.
   narrow screens and non-default font/scale settings.
 - [ ] In a new terminal, `chroma doctor` passes and `chroma legend` looks correct.
 - [ ] Wrapper commands, Tab completion, Ctrl-R, and Omarchy aliases still work.
+- [ ] Bracketed-pasting two harmless commands does not execute them; Enter runs
+  the complete buffer. Test Emacs, Vi insert and Vi normal mode when used.
+- [ ] Ctrl+C discards an unwanted MULTILINE buffer in Emacs; in Vi use Escape,
+  `H`, `dG`, `i`. The next command works without closing the terminal.
+- [ ] With `CHROMA_ENTER_ACCEPT=0` in config and a new terminal, Emacs/Vi insert
+  Enter adds a newline and Ctrl+J submits. Remove the override to restore Chroma.
+- [ ] Doctor in the affected terminal shows the Enter policy, bindings and
+  bracketed-paste option; the panel Doctor identifies its isolated shell scope.
 - [ ] Disable stops loading Chroma in a new terminal; re-enable restores it.
 - [ ] Theme reload reaches the next prompt in already loaded 0.4+ shells.
 - [ ] Failed/missing dependencies show errors; the interface does not hang.
@@ -146,8 +172,11 @@ bash tests/run.bash
 ```
 
 Python 3 and Node run the bridge/model tests without third-party packages.
-The development bootstrap tests use real local Git repositories plus a simulated
-Omarchy host to cover cancel, validation, collisions, branch updates and recovery.
+The bootstrap tests use local sources plus a simulated Omarchy host to cover
+exact local copies, no remote fetches, cancel, validation, collisions and recovery.
+Standalone regressions trap network tools and verify detached/incomplete input
+fails before installation changes. Real ble.sh PTY tests cover protected paste,
+Emacs/Vi acceptance, opt-out, delayed keymaps, continuation, Ctrl+C and Doctor.
 Terminal tests use real PTYs for consent, Escape, Ctrl-C, mode restoration and
 successful setup in isolated paths. CI builds `ttfx` at a pinned commit and tests
 the actual effect command and terminal flow, without installing it on a user's machine.

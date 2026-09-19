@@ -28,6 +28,7 @@ bash "$root/tests/test_theme.bash"
 bash "$root/tests/test_install.bash"
 python3 "$root/tests/test_plugin.py"
 python3 "$root/tests/test_setup.py"
+python3 "$root/tests/test_local_install.py"
 python3 "$root/tests/test_terminal_installer.py"
 node "$root/tests/test_model.js"
 
@@ -40,6 +41,7 @@ fi
 
 if [[ ${CHROMA_BLESH_PATH:-} ]]; then
   bash "$root/tests/test_ble_integration.bash"
+  python3 "$root/tests/test_input.py"
 else
   printf 'note: CHROMA_BLESH_PATH is unset; real ble.sh integration pass skipped\n'
 fi

@@ -35,7 +35,7 @@ if ! inline_output=$(
   XDG_DATA_HOME=$inline_home/.local/share \
   XDG_CONFIG_HOME=$inline_home/.config \
   CHROMA_INSTALL_BLESH=0 \
-    bash -c "$(<"$root/install.sh")" 2>&1
+    bash -c "$(<"$root/install.sh")" -- --source "$root" 2>&1
 ); then
   printf '%s\n' "$inline_output" >&2
   exit 1

@@ -1,3 +1,5 @@
+> Historical 0.4.0 submission draft. The active issue is [#6672](https://github.com/omacom/omarchy-plugin-marketplace/issues/6672); see [current review notes](MARKETPLACE.md) for 0.4.1.
+
 ### Repository URL
 
 https://github.com/itsVoid-TV/Omarchy-Chroma

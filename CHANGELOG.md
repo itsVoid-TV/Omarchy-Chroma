@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.1 — 2026-09-19
+
+- Removed mutable-branch fetches from both shipped installers. Setup validates
+  and installs a local snapshot; standalone installation requires local sources.
+  ZIP snapshots have no Git metadata; Git-managed installs use Omarchy plugin add.
+- Enter accepts multiline buffers in Emacs and Vi modes, with normal unfinished
+  command continuation in Emacs/Vi insert. `CHROMA_ENTER_ACCEPT=0` preserves
+  upstream or custom bindings. Bracketed paste and speed detection stay intact.
+- Added live MULTILINE/paste diagnostics and documented Ctrl+C recovery, safe
+  pasting, opt-out and snapshot updates.
+- Added installer no-fetch regressions and actual ble.sh PTY input tests,
+  including delayed keymaps, opt-out, cancellation and diagnostic side effects.
+- Made configuration regression assertions fail the suite immediately.
+
 ## 0.4.0 — Command Chroma plugin (development)
 
 - Prepared publication on main with the standard Omarchy add command, a main

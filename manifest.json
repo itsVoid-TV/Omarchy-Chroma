@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.itsvoid-tv.command-chroma",
   "name": "Command Chroma",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": "itsVoid-TV",
   "license": "MIT",
   "description": "Theme-aware semantic Bash highlighting with an animated English terminal installer, accessible contrast, diagnostics, and a native control panel.",

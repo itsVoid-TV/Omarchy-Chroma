@@ -44,6 +44,10 @@ declare -p CHROMA_EXTRA_DANGER_COMMANDS &>/dev/null || declare -ga CHROMA_EXTRA_
 # "[ble: exit N]" marker. Chroma's semantic danger colors stay active.
 : "${CHROMA_BLE_ERROR_FEEDBACK:=0}"
 
+# Enter submits complete multiline input; bracketed paste remains protected.
+# Set to 0 to leave ble.sh's original (or user-defined) Enter bindings alone.
+: "${CHROMA_ENTER_ACCEPT:=1}"
+
 # Follow Omarchy's active colors.toml and lift low-contrast palette entries
 # toward black or white until they remain readable at small terminal sizes.
 : "${CHROMA_THEME_INTEGRATION:=1}"
@@ -71,6 +75,7 @@ chromarchy::validate_config() {
   chromarchy::validate_toggle CHROMA_FZF_INTEGRATION 1
   chromarchy::validate_toggle CHROMA_SUGGESTIONS 0
   chromarchy::validate_toggle CHROMA_BLE_ERROR_FEEDBACK 0
+  chromarchy::validate_toggle CHROMA_ENTER_ACCEPT 1
   chromarchy::validate_toggle CHROMA_THEME_INTEGRATION 1
 
   if [[ $CHROMA_MIN_CONTRAST =~ ^([0-9]+)([.][0-9]+)?$ ]]; then

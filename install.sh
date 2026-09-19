@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly CHROMA_REPOSITORY='https://github.com/itsVoid-TV/omarchy-chroma.git'
 readonly BLESH_URL='https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly-20260818%2B63c23e9.tar.xz'
 readonly BLESH_SHA256='f033df78cbe6017b2bc8286852f9e4edd18fbddf0025faf19967726e06577189'
 readonly START_MARKER='# >>> omarchy-chroma >>>'
@@ -116,22 +115,12 @@ done
 if [[ ! $source_dir ]]; then
   if [[ ${BASH_SOURCE[0]:-} ]]; then
     if ! script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P); then
-      script_dir=
+      die 'could not resolve the local installer directory; supply --source DIR'
     fi
   else
-    # `bash -c "$(curl ...)"` has no BASH_SOURCE entry. Checking PWD first
-    # retains local-checkout behavior without tripping nounset.
-    script_dir=$PWD
+    die 'no local installer path; run bash install.sh from a reviewed checkout, or supply --source DIR'
   fi
-  if [[ -r $script_dir/chromarchy.bash && -r $script_dir/lib/parser.bash ]]; then
-    source_dir=$script_dir
-  else
-    command -v git >/dev/null || die 'git is required when no local source is available'
-    temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/omarchy-chroma.XXXXXXXX")
-    say 'downloading the repository...'
-    git clone --depth 1 --quiet "$CHROMA_REPOSITORY" "$temp_dir/repository"
-    source_dir=$temp_dir/repository
-  fi
+  source_dir=$script_dir
 fi
 
 for required_file in \

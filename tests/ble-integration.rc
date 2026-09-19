@@ -115,6 +115,11 @@ doctor_output=$(chromarchy::doctor) || chroma_test_fail 'chroma doctor reported 
    $doctor_output == *'auto suggestions   disabled'* &&
    $doctor_output == *'red error feedback disabled'* ]] ||
   chroma_test_fail 'chroma doctor omitted theme or input-feedback diagnostics'
+[[ $doctor_output == *'CHROMA_ENTER_ACCEPT=1'* &&
+   $doctor_output == *'bracketed paste    on'* &&
+   $doctor_output == *'accept threshold   5 (speed detection only)'* &&
+   $doctor_output == *'Ctrl+C cancels the current buffer'* ]] ||
+  chroma_test_fail 'chroma doctor omitted MULTILINE/paste diagnostics'
 
 printf 'render-probe %sINSTALL\e[0m on %s\n' "$rendered_sgr" "$CHROMA_EXPECTED_THEME"
 

@@ -13,7 +13,7 @@ CHROMA_ROOT=$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && builtin pwd -
   printf 'Omarchy Chroma: could not resolve its installation directory.\n' >&2
   return 1
 }
-CHROMA_VERSION=0.4.0
+CHROMA_VERSION=0.4.1
 _chromarchy_should_attach=0
 
 for _chromarchy_required in \
@@ -73,6 +73,20 @@ if [[ $CHROMA_BLE_ERROR_FEEDBACK != 1 ]]; then
   bleopt exec_errexit_mark=
   ble-face -s syntax_error none
   ble-face -s argument_error none
+fi
+
+# ble-bind queues bindings for keymaps that are not loaded yet, so switching
+# editing modes later also works. Keep bracketed paste and its review buffer;
+# change only the explicit Enter gesture. "syntax" preserves continuation of
+# unfinished quotes/compound commands in Emacs and Vi insert mode. Vi normal
+# mode dispatches to its own accept-line widget to retain its mode transitions.
+if [[ $CHROMA_ENTER_ACCEPT == 1 ]]; then
+  for _chromarchy_keymap in emacs vi_imap vi_nmap; do
+    for _chromarchy_key in C-m RET; do
+      ble-bind -m "$_chromarchy_keymap" -f "$_chromarchy_key" 'accept-line syntax'
+    done
+  done
+  unset _chromarchy_keymap _chromarchy_key
 fi
 
 if [[ $CHROMA_FZF_INTEGRATION == 1 ]] && command -v fzf &>/dev/null; then
@@ -146,6 +160,35 @@ chromarchy::doctor() {
   printf '  %-18s %s\n' 'auto suggestions' "$suggestions"
   [[ $CHROMA_BLE_ERROR_FEEDBACK == 1 ]] && error_feedback=enabled
   printf '  %-18s %s\n' 'red error feedback' "$error_feedback"
+  if [[ $CHROMA_ENTER_ACCEPT == 1 ]]; then
+    printf '  %-18s %s\n' 'Enter policy' 'accept complete multiline input (CHROMA_ENTER_ACCEPT=1)'
+  else
+    printf '  %-18s %s\n' 'Enter policy' 'ble.sh / user bindings (CHROMA_ENTER_ACCEPT=0)'
+  fi
+  # shellcheck disable=SC2154 # live options owned by ble.sh
+  printf '  %-18s %s\n' 'bracketed paste' "${bleopt_term_bracketed_paste_mode:-DISABLED (not disabled by Chroma)}"
+  printf '  %-18s %s\n' 'accept threshold' "${bleopt_accept_line_threshold:-unknown} (speed detection only)"
+  local keymap=emacs bindings binding
+  [[ ! -o vi ]] || keymap=vi_imap
+  printf '  %-18s %s\n' 'editing keymap' "$keymap"
+  # Printing an unloaded keymap in a subshell consumes ble.sh's deferred bind
+  # file without keeping the bindings in the parent. Never trigger that load
+  # from diagnostics (also important when users capture `chroma doctor`).
+  if ble/decode/keymap#registered "$keymap"; then
+    bindings=$(ble-bind -m "$keymap" -P)
+    while IFS= read -r binding; do
+      case $binding in
+        *' -f C-m '*|*' -f RET '*) printf '    %s\n' "$binding" ;;
+      esac
+    done <<< "$bindings"
+  else
+    printf '  %-18s %s\n' 'Enter bindings' 'pending keymap load; check in a new interactive terminal'
+  fi
+  if [[ -o vi ]]; then
+    printf '  %-18s %s\n' 'discard input' 'Esc, H, dG, i clears the Vi buffer; Ctrl+C keeps native Vi behavior'
+  else
+    printf '  %-18s %s\n' 'discard input' 'Ctrl+C cancels the current buffer'
+  fi
   theme_status=$CHROMA_THEME_SOURCE
   if [[ $CHROMA_THEME_SOURCE == omarchy ]]; then
     theme_status="$CHROMA_THEME_NAME ($CHROMA_THEME_MODE)"

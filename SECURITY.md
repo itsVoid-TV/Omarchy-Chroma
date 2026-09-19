@@ -19,6 +19,13 @@ marker. It pins the downloaded `ble.sh` archive and verifies its SHA-256
 checksum before extraction. GitHub Actions dependencies are pinned to immutable
 revisions.
 
+The shipped `setup` and `install.sh` never fetch Chroma source. `setup` copies
+the local source, omits Git metadata, validates the staged snapshot and enables
+that exact copy. `install.sh` requires complete local files beside the script or
+in an explicit `--source DIR`, failing closed if they are absent. Neither falls
+back to a mutable remote branch. Users acquire/review source separately (for
+example through Omarchy's plugin manager); validation does not sandbox code.
+
 ## Command Chroma plugin boundary
 
 The QML widget and Bash integration are separate. Enabling the widget performs
@@ -31,9 +38,17 @@ Omarchy's `plugin add` intentionally never executes plugin hooks. Chroma does
 not bypass that boundary: the panel only opens an English terminal installer,
 without passing `--yes`. The user reviews the changes and presses `y` in that
 terminal before Bash setup begins. The `./setup` development bootstrap first
-clones, validates and enables the widget, then (when interactive) hands off to
+copies the local files, validates and enables the widget, then (when interactive) hands off to
 the same terminal installer with a separate confirmation. `./setup --yes`
 confirms only the widget. `./setup --bash --yes` explicitly confirms Bash setup.
+
+Bracketed paste remains enabled by default. Pasting multiline text inserts it
+for review; it does not submit commands. Chroma changes the explicit Enter
+binding to accept multiline input. `CHROMA_ENTER_ACCEPT=0` leaves upstream/user
+bindings alone in new terminals. Ctrl+C cancels in Emacs; Vi retains its native
+cancel/mode bindings (see the README for whole-buffer recovery). Existing user
+overrides of ble.sh's paste settings remain visible in Doctor; Chroma does not
+disable bracketed paste or speed-based detection to implement this feature.
 
 The optional logo animation uses an existing `ttfx` or `tte` binary with fixed
 arguments and the bundled logo file. It never starts the screensaver, downloads

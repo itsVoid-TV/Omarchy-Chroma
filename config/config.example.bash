@@ -18,6 +18,13 @@
 # Set this to 1 only if you want ble.sh's original error feedback back.
 # CHROMA_BLE_ERROR_FEEDBACK=1
 
+# Enter runs complete commands even in MULTILINE mode. Bracketed paste stays
+# enabled: pasting alone does not run commands. Ctrl+C discards in Emacs mode;
+# Vi keeps its native keys (Esc, H, dG, i clears the whole Vi buffer).
+# Set to 0 to keep ble.sh's original Enter behavior (Ctrl+J runs the buffer).
+# Open a new terminal after changing this setting.
+# CHROMA_ENTER_ACCEPT=0
+
 # Omarchy's active theme is followed automatically. Chroma preserves each
 # theme's hue but raises faint colors to this minimum contrast ratio.
 # CHROMA_THEME_INTEGRATION=1

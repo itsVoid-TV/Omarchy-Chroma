@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 # shellcheck disable=SC1091
@@ -8,6 +8,7 @@ source "$root/config/defaults.bash"
 unset CHROMA_FZF_INTEGRATION
 CHROMA_SUGGESTIONS=yes
 CHROMA_BLE_ERROR_FEEDBACK=2
+CHROMA_ENTER_ACCEPT=invalid
 CHROMA_THEME_INTEGRATION=no
 CHROMA_MIN_CONTRAST=99.5
 unset CHROMA_STYLES
@@ -22,6 +23,7 @@ chromarchy::validate_config
 [[ $CHROMA_FZF_INTEGRATION == 1 ]]
 [[ $CHROMA_SUGGESTIONS == 0 ]]
 [[ $CHROMA_BLE_ERROR_FEEDBACK == 0 ]]
+[[ $CHROMA_ENTER_ACCEPT == 1 ]]
 [[ $CHROMA_THEME_INTEGRATION == 1 ]]
 [[ $CHROMA_MIN_CONTRAST == 21 ]]
 [[ $(declare -p CHROMA_STYLES) == 'declare -A '* ]]

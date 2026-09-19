@@ -7,9 +7,9 @@ Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
-> Plugin 0.4.0 is available from `main`. Marketplace admission and native
+> Plugin 0.4.1 is available from `main`. Marketplace admission and native
 > Omarchy acceptance are pending; no stable release is tagged yet. See the
-> [verification report](docs/REVIEW-2026-09-12.md) and [device checklist](docs/PLUGIN_TESTING.md).
+> [current verification report](docs/REVIEW-2026-09-19.md) and [device checklist](docs/PLUGIN_TESTING.md).
 
 ## Install on Omarchy Quattro
 
@@ -35,8 +35,10 @@ open a terminal inside its folder, and run:
 ```
 
 If the archive tool removed executable permissions, use `python3 setup`.
-The bootstrap animates the Chroma logo, validates the plugin and creates a real
-Git checkout, so later updates work through Omarchy. After enabling the widget,
+The bootstrap animates the Chroma logo, copies this local source into a staging
+directory, validates that copy and installs it. It never clones, pulls or fetches
+Chroma code. The installed snapshot has no Git metadata; use the `omarchy plugin
+add` route above for Git-managed updates. After enabling the widget,
 it continues **in the same terminal** with a separate review and confirmation
 for the Bash integration. The bootstrap phase itself does not touch `.bashrc`.
 `./setup --yes` confirms only the widget; it does not run Bash setup silently.
@@ -227,6 +229,12 @@ working installation. Existing configuration and symlinked `.bashrc` files are
 preserved. If `ble.sh` is missing, Chroma downloads one pinned build and
 verifies its SHA-256 checksum before installing it locally.
 
+Both shipped installers use the reviewed local files, never a fresh remote
+`main`. `install.sh` resolves its source beside itself, or accepts an explicit
+`--source DIR`; incomplete or detached copies fail before changing the
+installation. Piped/inline installers without `--source` are unsupported. The
+pinned, checksum-verified ble.sh dependency is the only installer download.
+
 If you prefer an updateable Git checkout:
 
 ```bash
@@ -234,6 +242,54 @@ git clone https://github.com/itsVoid-TV/Omarchy-Chroma.git
 cd Omarchy-Chroma
 bash install.sh
 ```
+
+## Enter, MULTILINE and pasting
+
+ble.sh enters **MULTILINE** when the editing buffer contains a newline. This is
+common when you paste several lines or an entire file. Bracketed paste tells
+the editor which text was pasted: its embedded newlines stay in the buffer so
+you can inspect the text before deciding to execute it. Pasting alone must not
+silently run a sequence of shell commands.
+
+Upstream ble.sh normally makes Enter (`RET` / `C-m`) insert another newline in
+Emacs and Vi insert mode; `Ctrl+J` (`C-j`) submits the buffer. That can look like a
+stuck terminal if you keep pressing Enter. Vi normal mode normally moves within
+a multiline buffer instead of submitting it with Enter.
+
+**Chroma defaults to Enter submitting complete commands, including MULTILINE
+buffers**, in Emacs, Vi insert and Vi normal mode. Both `C-m` and terminal `RET`
+are bound to `accept-line syntax`; Vi's own accept widget preserves its mode
+transitions. In Emacs and Vi insert mode, unfinished quotes or compound commands
+still continue on the next line. `Ctrl+J` keeps its existing binding. To insert
+a literal newline in Emacs or Vi insert mode, use `Ctrl+V`, then `Ctrl+J`.
+
+**Bracketed paste intentionally stays enabled.** Chroma neither disables
+`term_bracketed_paste_mode` nor changes `accept_line_threshold`. Setting the
+latter to `-1` only disables speed-based paste/multiline detection; it does not
+change the Enter binding or replace bracketed-paste protection. Existing
+explicit user overrides of these ble.sh options are respected and shown by
+Doctor. A terminal must support bracketed paste for that protection to work.
+
+To restore upstream ble.sh behavior (or keep your own Enter bindings), add this
+to `~/.config/omarchy-chroma/config.bash`, then **open a new terminal**:
+
+```bash
+CHROMA_ENTER_ACCEPT=0
+```
+
+Remove that line or set it to `1` to restore Chroma's default. Theme reload does
+not reload this setting. If a pasted buffer is unwanted or seems stuck, press
+**Ctrl+C to discard it in the default Emacs mode**; you do not need to close the
+terminal. Vi retains its native Ctrl+C behavior (mode/cancel handling, not a
+whole-buffer discard): press Escape, `H`, `dG`, then `i` to clear the buffer and
+resume insertion. Inspect pasted commands before pressing Enter: Enter
+deliberately executes the complete buffer.
+
+`chroma doctor` reports the Enter policy, editing keymap, loaded Enter bindings,
+bracketed-paste option, speed threshold and Ctrl+C recovery. The panel's Doctor
+uses a separate diagnostic shell, so check `chroma doctor` inside the affected
+terminal for its actual bindings. Detached diagnostics report deferred keymaps
+without loading them or consuming queued bindings.
 
 ## Colors
 
@@ -269,7 +325,7 @@ warning that `rm` will run.
 | Command | Purpose |
 |---|---|
 | `chroma legend` | Show every semantic color with examples |
-| `chroma doctor` | Check ble.sh, rendering, theme, config, contrast, and the `.bashrc` loader |
+| `chroma doctor` | Check ble.sh, MULTILINE/paste, rendering, theme, config, contrast, and the `.bashrc` loader |
 | `chroma explain COMMAND...` | Print token categories and source ranges without executing the command |
 | `chroma reload` | Reload the current Omarchy palette and report a useful error if it fails |
 | `chroma version` | Print the loaded Chroma version |
@@ -297,6 +353,9 @@ CHROMA_SUGGESTIONS=1
 # Opt in only if you want ble.sh's red error overlays and exit marker:
 CHROMA_BLE_ERROR_FEEDBACK=1
 
+# Keep ble.sh's original MULTILINE Enter behavior (Ctrl+J submits):
+CHROMA_ENTER_ACCEPT=0
+
 CHROMA_EXTRA_INSTALL_COMMANDS+=(my-installer)
 CHROMA_EXTRA_REMOVE_COMMANDS+=(my-uninstaller)
 CHROMA_EXTRA_DANGER_COMMANDS+=(my-disk-wiper)
@@ -318,8 +377,10 @@ or contrast settings fall back safely and are listed by `chroma doctor`.
 
 ## Update
 
-For the plugin, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin),
+For Git-managed plugins, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin),
 then choose **Set up in terminal** in the dashboard when it reports a Bash update.
+ZIP snapshots made with `./setup` require replacing the widget or switching to
+a Git-managed installation; that same guide covers both paths.
 
 For the standalone version, download and extract a current `main` ZIP and run
 this from its folder. Your config file is preserved and the code is replaced as

@@ -1,4 +1,4 @@
-"""Development ZIP bootstrap tests with an isolated Omarchy host double."""
+"""Local snapshot bootstrap tests with an isolated Omarchy host double."""
 import contextlib
 import importlib.machinery
 import importlib.util
@@ -23,15 +23,19 @@ class SetupTests(unittest.TestCase):
         self.fixture = tempfile.TemporaryDirectory(prefix="chroma-setup spaces '")
         self.addCleanup(self.fixture.cleanup)
         self.base = Path(self.fixture.name)
-        self.seed = self.base / "remote"
+        self.seed = self.base / "reviewed source"
         self.seed.mkdir()
         self.plugins = self.base / "plugins"
         self.target = self.plugins / setup.PLUGIN_ID
         self.bashrc = self.base / "bashrc"
         self.bashrc.write_text("# keep existing Bash setup\n")
-        self.git("init", "-q", "-b", setup.BRANCH)
+        self.git("init", "-q", "-b", "main")
         (self.seed / "manifest.json").write_text((ROOT / "manifest.json").read_text())
+        (self.seed / "local.txt").write_text("reviewed local content")
         self.commit("fixture")
+        self.root_patch = patch.object(setup, "ROOT", self.seed)
+        self.root_patch.start()
+        self.addCleanup(self.root_patch.stop)
         self.calls = []
         self.catalog = []
         self.failure = None
@@ -58,9 +62,8 @@ class SetupTests(unittest.TestCase):
         self.calls.append(list(argv))
         if argv[0] == self.failure:
             raise subprocess.CalledProcessError(1, argv)
-        if argv[0] == "git":
-            self.assertEqual(argv[-2], setup.REPOSITORY)
-            return self.original_run([*argv[:-2], str(self.seed), argv[-1]], **kwargs)
+        if argv[0] in ("git", "curl", "wget", "omarchy-git-url-check"):
+            self.fail(f"Bootstrap must not fetch repository code: {argv}")
         if argv[0] == "mv":
             if self.race:
                 self.target.mkdir()
@@ -77,16 +80,16 @@ class SetupTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             setup.install(self.plugins, assume_yes=yes)
 
-    def test_setup_creates_an_independent_updatable_checkout(self):
+    def test_setup_installs_exact_local_snapshot_without_git_or_fetch(self):
+        # Local changes are the input; no branch tip is silently substituted.
+        (self.seed / "local.txt").write_text("reviewed working-tree content")
         self.install()
-        self.assertTrue((self.target / ".git").is_dir())
-        self.assertEqual(self.git("branch", "--show-current", directory=self.target), setup.BRANCH)
-        self.assertEqual(self.git("rev-parse", "--abbrev-ref", "@{upstream}", directory=self.target),
-                         "origin/" + setup.BRANCH)
-        (self.seed / "update.txt").write_text("new version")
-        self.commit("new version")
-        self.git("pull", "--ff-only", directory=self.target)
-        self.assertEqual((self.target / "update.txt").read_text(), "new version")
+        self.assertFalse((self.target / ".git").exists())
+        self.assertEqual((self.target / "local.txt").read_text(), "reviewed working-tree content")
+        self.assertEqual((self.target / "manifest.json").read_bytes(),
+                         (self.seed / "manifest.json").read_bytes())
+        (self.seed / "local.txt").write_text("later source change")
+        self.assertEqual((self.target / "local.txt").read_text(), "reviewed working-tree content")
         self.assertEqual(self.bashrc.read_text(), "# keep existing Bash setup\n")
         self.assertIn(["omarchy-plugin-enable", setup.PLUGIN_ID], self.calls)
         validator = next(i for i, call in enumerate(self.calls) if call[0] == "omarchy-plugin-validate")
@@ -112,11 +115,11 @@ class SetupTests(unittest.TestCase):
 
     def test_existing_checkout_symlink_and_catalog_collision_are_preserved(self):
         self.install()
-        before = self.git("rev-parse", "HEAD", directory=self.target)
+        before = (self.target / "local.txt").read_bytes()
         self.calls.clear()
         with self.assertRaisesRegex(RuntimeError, "already has a checkout"):
             self.install()
-        self.assertEqual(self.git("rev-parse", "HEAD", directory=self.target), before)
+        self.assertEqual((self.target / "local.txt").read_bytes(), before)
         self.assertFalse(any(call[0] == "git" for call in self.calls))
         moved = self.base / "existing"
         self.target.rename(moved)
@@ -131,12 +134,15 @@ class SetupTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "already in use"):
             self.install()
 
-    def test_clone_validation_and_manifest_failures_never_enable(self):
-        for command in ("git", "omarchy-plugin-validate"):
-            self.failure = command
-            with self.assertRaises(subprocess.CalledProcessError):
+    def test_copy_validation_and_manifest_failures_never_enable(self):
+        with patch.object(setup.shutil, "copytree", side_effect=OSError("copy failed")):
+            with self.assertRaises(OSError):
                 self.install()
-            self.assertFalse(self.target.exists())
+        self.assertFalse(self.target.exists())
+        self.failure = "omarchy-plugin-validate"
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.install()
+        self.assertFalse(self.target.exists())
         self.failure = None
         (self.seed / "manifest.json").write_text(json.dumps({"id": "org.example.unexpected"}))
         self.commit("wrong id")
@@ -157,7 +163,7 @@ class SetupTests(unittest.TestCase):
         self.failure = "omarchy-shell"
         with self.assertRaisesRegex(RuntimeError, "checkout was kept"):
             self.install()
-        self.assertTrue((self.target / ".git").is_dir())
+        self.assertTrue((self.target / "local.txt").is_file())
         self.assertEqual(self.bashrc.read_text(), "# keep existing Bash setup\n")
 
     def test_yes_never_hands_off_to_bash_even_in_an_interactive_terminal(self):
@@ -192,7 +198,19 @@ class SetupTests(unittest.TestCase):
                 setup.main()
             bootstrap.assert_not_called()
             self.assertEqual(handoff.call_args.args[1], [setup.sys.executable,
-                             str(ROOT / "scripts/chroma-installer"), "--no-animation", "--preview"])
+                             str(self.seed / "scripts/chroma-installer"), "--no-animation", "--preview"])
+
+    def test_destination_inside_source_is_rejected_before_copy(self):
+        with self.assertRaisesRegex(RuntimeError, "outside the source"):
+            setup.install(self.seed / "plugins", assume_yes=True)
+        self.assertFalse((self.seed / "plugins").exists())
+
+    def test_extracted_archive_needs_no_git(self):
+        import shutil
+        shutil.rmtree(self.seed / ".git")
+        with patch.object(setup.shutil, "which", side_effect=lambda name: None if name == "git" else "/usr/bin/" + name):
+            self.install()
+        self.assertTrue((self.target / "local.txt").is_file())
 
 
 if __name__ == "__main__":

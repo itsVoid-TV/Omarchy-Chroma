@@ -19,6 +19,12 @@ intact and that malformed loader markers cannot consume unrelated `.bashrc`
 content. Configuration changes need a fallback assertion in
 `tests/test_config.bash`.
 
+Neither shipped installer may fetch Chroma source. Keep no-fetch and missing
+local-source coverage in `tests/test_setup.py` and `tests/test_local_install.py`.
+Input changes require real PTY coverage in `tests/test_input.py`, including
+paste without execution, explicit acceptance, cancellation and the opt-out.
+CI provides the pinned ble.sh build through `CHROMA_BLESH_PATH`.
+
 Theme changes should include a dark and light fixture. CI additionally sets
 `CHROMA_OMARCHY_THEMES_DIR` to a pinned checkout of Omarchy and verifies every
 bundled palette. Color tests must assert the composed `ble.sh` ANSI output, not
