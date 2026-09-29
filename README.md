@@ -378,8 +378,19 @@ or contrast settings fall back safely and are listed by `chroma doctor`.
 
 ## Update
 
-For Git-managed plugins, use the [plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin),
-then choose **Set up in terminal** in the dashboard when it reports a Bash update.
+For Git-managed plugins, run:
+
+```bash
+omarchy plugin update io.github.itsvoid-tv.command-chroma
+```
+
+Review the diff. If it opens in a pager, press `q` to close the preview.
+Then confirm `Update ...?` to apply the update; closing the diff alone
+does not install it. Afterwards, choose **Set up in terminal** in the
+Chroma dashboard if it reports a Bash update, confirm the setup, and open
+a new terminal. Run `chroma version` to check the loaded version. See the
+[full plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin).
+
 ZIP snapshots made with `./setup` require replacing the widget or switching to
 a Git-managed installation; that same guide covers both paths.
 
