@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import selectors
 import shlex
 import shutil
 import signal
@@ -43,6 +44,7 @@ EXAMPLES = {
     "editor": "nvim, vim, helix",
 }
 CURRENT_PROCESS = None
+MAX_CHILD_OUTPUT = 64 * 1024
 
 
 def text_file(path, limit=1024 * 1024):
@@ -64,13 +66,21 @@ def clean(text):
 
 
 def stop_child(signum, _frame):
-    if CURRENT_PROCESS and CURRENT_PROCESS.poll() is None:
-        os.killpg(CURRENT_PROCESS.pid, signal.SIGTERM)
-        try:
-            CURRENT_PROCESS.wait(timeout=3)
-        except subprocess.TimeoutExpired:
-            os.killpg(CURRENT_PROCESS.pid, signal.SIGKILL)
+    if CURRENT_PROCESS:
+        kill_child_group(CURRENT_PROCESS)
     raise SystemExit(128 + signum)
+
+
+def kill_child_group(process):
+    # A shell may exit while a child still holds an inherited pipe open.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    try:
+        process.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        pass  # A stuck kernel wait must not block the panel indefinitely.
 
 
 def run(argv, timeout=8, extra_env=None):
@@ -84,17 +94,40 @@ def run(argv, timeout=8, extra_env=None):
         argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, env=env, start_new_session=True)
     try:
-        stdout, stderr = CURRENT_PROCESS.communicate(timeout=timeout)
-        return CURRENT_PROCESS.returncode, stdout, stderr
-    except subprocess.TimeoutExpired as error:
-        os.killpg(CURRENT_PROCESS.pid, signal.SIGTERM)
+        deadline = time.monotonic() + timeout
+        output = {CURRENT_PROCESS.stdout: bytearray(), CURRENT_PROCESS.stderr: bytearray()}
+        total = 0
+        with selectors.DefaultSelector() as selector:
+            for stream in output:
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ)
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise RuntimeError("Action timed out; its helper processes were stopped.")
+                for key, _ in selector.select(remaining):
+                    chunk = os.read(key.fd, min(16384, MAX_CHILD_OUTPUT - total + 1))
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        continue
+                    if total + len(chunk) > MAX_CHILD_OUTPUT:
+                        raise RuntimeError("Action output exceeded the 64 KiB limit; its helper processes were stopped.")
+                    output[key.fileobj].extend(chunk)
+                    total += len(chunk)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("Action timed out; its helper processes were stopped.")
         try:
-            CURRENT_PROCESS.communicate(timeout=3)
-        except subprocess.TimeoutExpired:
-            os.killpg(CURRENT_PROCESS.pid, signal.SIGKILL)
-            CURRENT_PROCESS.communicate()
-        raise RuntimeError("Action timed out; its helper processes were stopped.") from error
+            code = CURRENT_PROCESS.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError("Action timed out; its helper processes were stopped.") from error
+        return code, bytes(output[CURRENT_PROCESS.stdout]), bytes(output[CURRENT_PROCESS.stderr])
+    except Exception:
+        kill_child_group(CURRENT_PROCESS)
+        raise
     finally:
+        CURRENT_PROCESS.stdout.close()
+        CURRENT_PROCESS.stderr.close()
         CURRENT_PROCESS = None
 
 

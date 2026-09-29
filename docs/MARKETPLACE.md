@@ -1,10 +1,19 @@
 # Marketplace review
 
-The active submission is [omacom/omarchy-plugin-marketplace#6672](https://github.com/omacom/omarchy-plugin-marketplace/issues/6672).
+The active submission is [omacom/omarchy-plugin-marketplace#8501](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501).
 The requested listing name is **Omarchy-Chroma**; the manifest still uses
 **Command Chroma** and permanent ID `io.github.itsvoid-tv.command-chroma`.
 These identify the same terminal-highlighting project. No repository or ID
 rename is part of this fix.
+
+## Revision 0.4.2
+
+The maintainer's follow-up identified unbounded `Popen.communicate()` output
+in the Python control bridge. It now reads stdout and stderr incrementally with
+a shared 64 KiB cap and a deadline. On excess output or timeout it stops the
+entire helper process group, closes both pipes and reports an error. Regression
+tests cover a looping `config.bash`, stderr floods and ordinary small output.
+The earlier installer fix remains in place.
 
 ## Revision 0.4.1
 
@@ -32,7 +41,7 @@ for history; it is not the current review evidence.
 ## Review handoff
 
 Post the complete tested 40-character commit SHA, link its successful CI run,
-and explain the local-only installer behavior in the existing issue. Approval
+and explain the output cap in the existing issue. Approval
 and listing remain the maintainer's decision. Automated test success does not
 establish native Omarchy/Wayland acceptance or a security certification.
 

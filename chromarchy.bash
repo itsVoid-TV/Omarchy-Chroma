@@ -13,7 +13,7 @@ CHROMA_ROOT=$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && builtin pwd -
   printf 'Omarchy Chroma: could not resolve its installation directory.\n' >&2
   return 1
 }
-CHROMA_VERSION=0.4.1
+CHROMA_VERSION=0.4.2
 _chromarchy_should_attach=0
 
 for _chromarchy_required in \

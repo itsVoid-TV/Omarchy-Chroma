@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 — 2026-09-29
+
+- Bounded the control panel helper's combined stdout and stderr to 64 KiB
+  while reading, including palette inspection of executable user configuration.
+  A noisy or looping helper is stopped with a clear error instead of filling
+  the bridge's memory before the timeout. Added stdout/stderr flood regressions.
+
 ## 0.4.1 — 2026-09-19
 
 - Removed mutable-branch fetches from both shipped installers. Setup validates

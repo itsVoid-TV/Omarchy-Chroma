@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -257,6 +258,22 @@ class PluginTests(unittest.TestCase):
     def test_timeout_stops_helpers(self):
         with self.assertRaisesRegex(RuntimeError, "timed out"):
             bridge.run(["sleep", "3"], timeout=0.02)
+
+    def test_noisy_config_is_stopped_before_timeout(self):
+        self.call("setup", "--confirm")
+        config = self.settings / "config.bash"
+        config.write_text("while :; do printf '%01024d' 0; done\n", encoding="utf-8")
+        start = time.monotonic()
+        result = self.call("inspect")["data"]
+        self.assertIn("output exceeded the 64 KiB limit", result["paletteError"])
+        self.assertLess(time.monotonic() - start, 5)
+
+    def test_stderr_flood_is_bounded_and_normal_output_is_preserved(self):
+        code, stdout, stderr = bridge.run(["bash", "-c", "printf ready; printf warning >&2"])
+        self.assertEqual((code, stdout, stderr), (0, b"ready", b"warning"))
+        with self.assertRaisesRegex(RuntimeError, "output exceeded the 64 KiB limit"):
+            bridge.run(["python3", "-c",
+                        "import os; os.write(2, b'x' * 1000000)"], timeout=5)
 
 
 if __name__ == "__main__":
