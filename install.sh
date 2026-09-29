@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly BLESH_URL='https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly-20260818%2B63c23e9.tar.xz'
 readonly BLESH_SHA256='f033df78cbe6017b2bc8286852f9e4edd18fbddf0025faf19967726e06577189'
+readonly BLESH_MAX_BYTES=$((8 * 1024 * 1024))
 readonly START_MARKER='# >>> omarchy-chroma >>>'
 readonly END_MARKER='# <<< omarchy-chroma <<<'
 
@@ -154,13 +155,21 @@ fi
 
 if [[ ${CHROMA_INSTALL_BLESH:-1} != 0 ]] && ! blesh_available; then
   command -v curl >/dev/null || die 'curl is required to install ble.sh'
+  command -v head >/dev/null || die 'head is required to limit the ble.sh download'
   command -v sha256sum >/dev/null || die 'sha256sum is required to verify ble.sh'
   command -v tar >/dev/null || die 'tar is required to install ble.sh'
   [[ $temp_dir ]] || temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/omarchy-chroma.XXXXXXXX")
   say 'downloading the pinned ble.sh build...'
-  curl --fail --location --silent --show-error \
-    --connect-timeout 15 --max-time 180 --retry 3 --retry-all-errors \
-    "$BLESH_URL" --output "$temp_dir/blesh.tar.xz"
+  # curl rejects oversized responses early when it can; head also bounds disk
+  # use with older curl versions and responses without Content-Length.
+  if ! curl --fail --location --silent --show-error \
+    --connect-timeout 15 --max-time 180 --retry 3 \
+    --max-filesize "$BLESH_MAX_BYTES" "$BLESH_URL" --output - |
+      head -c "$((BLESH_MAX_BYTES + 1))" > "$temp_dir/blesh.tar.xz"; then
+    die 'ble.sh download failed or exceeded the 8 MiB limit'
+  fi
+  [[ $(wc -c < "$temp_dir/blesh.tar.xz") -le $BLESH_MAX_BYTES ]] ||
+    die 'ble.sh download exceeded the 8 MiB limit'
   printf '%s  %s\n' "$BLESH_SHA256" "$temp_dir/blesh.tar.xz" | sha256sum --check --status ||
     die 'ble.sh checksum verification failed'
   mkdir -p -- "$temp_dir/blesh"
