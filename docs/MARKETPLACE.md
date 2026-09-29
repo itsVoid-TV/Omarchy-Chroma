@@ -6,6 +6,22 @@ The requested listing name is **Omarchy-Chroma**; the manifest still uses
 These identify the same terminal-highlighting project. No repository or ID
 rename is part of this fix.
 
+## Revision 0.4.3
+
+The maintainer found that the mandatory pinned ble.sh download still lacked a
+response-size bound. `install.sh` now caps that response at 8 MiB while it is
+received: curl rejects known or streaming oversize responses, and `head`
+limits the temporary file to at most 8 MiB plus one byte even with older curl.
+The installer checks the final byte count before the unchanged SHA-256
+verification, then extracts only the verified archive. Oversized or failed
+transfers abort before activation, preserve the original `.bashrc`, and clean
+the temporary file. A local no-Content-Length streaming server exercises both
+the current curl path and a shim emulating older curl behavior.
+
+Omarchy's stock `starship.toml` separately enables `add_newline`, which creates
+an empty line before the first terminal prompt. The README gives the one-line
+user configuration change; the plugin does not silently change Starship.
+
 ## Revision 0.4.2
 
 The maintainer's follow-up identified unbounded `Popen.communicate()` output
@@ -41,7 +57,8 @@ for history; it is not the current review evidence.
 ## Review handoff
 
 Post the complete tested 40-character commit SHA, link its successful CI run,
-and explain the output cap in the existing issue. Approval
+and explain both bounded helper output and the ble.sh download cap in the
+existing issue. Approval
 and listing remain the maintainer's decision. Automated test success does not
 establish native Omarchy/Wayland acceptance or a security certification.
 

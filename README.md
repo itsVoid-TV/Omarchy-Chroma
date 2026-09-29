@@ -7,7 +7,7 @@ Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
-> Plugin 0.4.2 is available from `main`. Marketplace admission and native
+> Plugin 0.4.3 is available from `main`. Marketplace admission and native
 > Omarchy acceptance are pending; no stable release is tagged yet. See the
 > [current verification report](docs/REVIEW-2026-09-19.md) and [device checklist](docs/PLUGIN_TESTING.md).
 
@@ -227,7 +227,8 @@ The installer uses only user-owned XDG directories, adds one marked block to
 directory and activated atomically, so an incomplete source cannot overwrite a
 working installation. Existing configuration and symlinked `.bashrc` files are
 preserved. If `ble.sh` is missing, Chroma downloads one pinned build and
-verifies its SHA-256 checksum before installing it locally.
+limits the download to 8 MiB before verifying its SHA-256 checksum and
+installing it locally.
 
 Both shipped installers use the reviewed local files, never a fresh remote
 `main`. `install.sh` resolves its source beside itself, or accepts an explicit
@@ -401,6 +402,21 @@ For a cloned checkout, use `git pull --ff-only` and run `bash install.sh` again.
 Add `--purge` to remove the user color configuration too. The uninstaller deliberately keeps `ble.sh`, because other Bash add-ons may use it.
 
 ## Troubleshooting
+
+### Empty line above the first prompt
+
+Omarchy's [default Starship configuration](https://github.com/omacom/omarchy/blob/quattro/config/starship.toml)
+sets `add_newline = true`. Starship
+then inserts an empty line before the first prompt in a new terminal. To remove
+it, edit `~/.config/starship.toml` (or the file named by `STARSHIP_CONFIG`)
+and set:
+
+```toml
+add_newline = false
+```
+
+Open a new terminal to check the change. Chroma does not edit your Starship
+settings as part of Bash installation.
 
 Run:
 

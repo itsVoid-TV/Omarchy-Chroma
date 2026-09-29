@@ -29,6 +29,7 @@ bash "$root/tests/test_install.bash"
 python3 "$root/tests/test_plugin.py"
 python3 "$root/tests/test_setup.py"
 python3 "$root/tests/test_local_install.py"
+python3 "$root/tests/test_blesh_download.py"
 python3 "$root/tests/test_terminal_installer.py"
 node "$root/tests/test_model.js"
 

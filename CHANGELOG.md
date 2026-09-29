@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3 — 2026-09-29
+
+- Limited the pinned ble.sh archive to 8 MiB while downloading. curl rejects
+  oversized responses, and a bounded output pipe protects even older curl
+  versions or responses without Content-Length. The checksum still validates
+  the complete archive before extraction; failed downloads leave the live
+  installation and `.bashrc` untouched. Tested an oversized streaming response.
+- Documented how to disable Omarchy's Starship blank line above the first
+  terminal prompt without changing unrelated user settings in the installer.
+
 ## 0.4.2 — 2026-09-29
 
 - Bounded the control panel helper's combined stdout and stderr to 64 KiB
