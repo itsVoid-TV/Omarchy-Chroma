@@ -1,4 +1,4 @@
-> Historical 0.4.0 submission draft. The active issue is [#6672](https://github.com/omacom/omarchy-plugin-marketplace/issues/6672); see [current review notes](MARKETPLACE.md) for 0.4.1.
+> Historical 0.4.0 submission draft for the closed [#6672](https://github.com/omacom/omarchy-plugin-marketplace/issues/6672). The active issue is [#8501](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501); see [current review notes](MARKETPLACE.md).
 
 ### Repository URL
 

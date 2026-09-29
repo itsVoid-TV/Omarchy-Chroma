@@ -1,4 +1,4 @@
-# Testing Command Chroma 0.4.1
+# Testing Command Chroma 0.4.2
 
 The plugin is available from `main`, but native Omarchy acceptance and Marketplace
 admission remain pending. The repository is still `itsVoid-TV/Omarchy-Chroma`.

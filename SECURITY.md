@@ -58,7 +58,9 @@ on exit. `--preview` does not read user config or run the helper. Dynamic paths
 and diagnostics are stripped of terminal-control sequences before display.
 
 The Python bridge invokes fixed argv lists, serializes mutations with a lock,
-and bounds helper execution time. It removes BASH_ENV/ENV from helper
+and bounds helper execution time and combined stdout/stderr to 64 KiB while
+reading. It stops the helper process group when either limit is reached, before
+collecting any further output. It removes BASH_ENV/ENV from helper
 environments and never sources `.bashrc`. Palette inspection and the explicit
 Doctor **do** execute the user's trusted Chroma `config.bash`. It is executable
 Bash configuration, not an untrusted data format or a sandbox boundary.
