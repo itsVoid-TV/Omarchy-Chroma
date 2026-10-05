@@ -1,4 +1,4 @@
-# Command Chroma
+# Command Chroma 
 
 Theme-aware semantic Bash command highlighting for **Omarchy**, with an animated
 English terminal installer, readable contrast, diagnostics, and a native Quattro control panel.
@@ -8,8 +8,7 @@ installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
 > Plugin 0.4.3 is available from `main`. Marketplace admission and native
-> Omarchy acceptance are pending; no stable release is tagged yet. See the
-> [current verification report](docs/REVIEW-2026-09-19.md) and [device checklist](docs/PLUGIN_TESTING.md).
+>We got the Verification by Marketplace Maintainer @Hancore_Linux and are now available in the Omarchy Plugin Marketplace !
 
 ## Install on Omarchy Quattro
 
