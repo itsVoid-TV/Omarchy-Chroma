@@ -7,7 +7,7 @@ Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
-> Plugin 0.4.3 is available from `main`. Marketplace admission and native
+> Plugin 0.4.3 is available from `main`. Marketplace admission and 
 >We got the Verification by Marketplace Maintainer @Hancore_Linux and are now available in the Omarchy Plugin Marketplace !
 
 ## Install on Omarchy Quattro
