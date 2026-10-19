@@ -121,6 +121,34 @@ doctor_output=$(chromarchy::doctor) || chroma_test_fail 'chroma doctor reported 
    $doctor_output == *'Ctrl+C cancels the current buffer'* ]] ||
   chroma_test_fail 'chroma doctor omitted MULTILINE/paste diagnostics'
 
+# These are editor buffers passed directly to ble.sh, never executed. Verify
+# the composed danger style as well as semantic spans in both theme fixtures.
+ble/color/gspec2g "${CHROMA_STYLES[danger]}"
+expected_danger_g=$ret
+ble/color/g2sgr "$expected_danger_g"
+danger_sgr=$ret
+# shellcheck disable=SC2016 # literal command text, not shell execution
+for danger_line in \
+  'git push -fu origin main' \
+  'git push origin +main' \
+  'echo ${#arr[@]} && rm -rf /tmp/x' \
+  'xargs -0 rm -rf' \
+  'find . -execdir rm -rf {} +' \
+  'sudo -nu root rm -rf /tmp/x'; do
+  ble/highlight/layer/update "$danger_line" || chroma_test_fail 'danger render update failed'
+  found_danger=0
+  for span_index in "${!CHROMA_SPAN_CATEGORY[@]}"; do
+    [[ ${CHROMA_SPAN_CATEGORY[span_index]} == danger ]] || continue
+    g=
+    ble/highlight/layer:omarchy_chroma/getg "${CHROMA_SPAN_START[span_index]}"
+    [[ $g == "$expected_danger_g" ]] || chroma_test_fail "danger style lost: $danger_line"
+    found_danger=1
+  done
+  ((found_danger)) || chroma_test_fail "danger span missing: $danger_line"
+  rendered_buffer=$(printf '%s' "${_ble_highlight_layer_omarchy_chroma_buff[@]}")
+  [[ $rendered_buffer == *"$danger_sgr"* ]] || chroma_test_fail "danger SGR missing: $danger_line"
+done
+
 printf 'render-probe %sINSTALL\e[0m on %s\n' "$rendered_sgr" "$CHROMA_EXPECTED_THEME"
 
 printf 'ok - real ble.sh ANSI render: %s\n' "$CHROMA_EXPECTED_THEME"

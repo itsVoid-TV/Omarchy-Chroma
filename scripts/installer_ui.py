@@ -196,9 +196,9 @@ class Terminal:
                 try:
                     stdout, stderr = process.communicate(timeout=0.1)
                     return process.returncode, stdout, stderr
-                except subprocess.TimeoutExpired:
+                except subprocess.TimeoutExpired as error:
                     if time.monotonic() > deadline:
-                        raise RuntimeError("Setup timed out. Its helper was stopped; review the status before retrying.")
+                        raise RuntimeError("Setup timed out. Its helper was stopped; review the status before retrying.") from error
                     if action == "setup" and self.color:
                         print("\r  " + self.paint(frames[tick % 4] + " Installing bundled code / checking ble.sh…", "52d6ff"), end="", flush=True)
                         tick += 1

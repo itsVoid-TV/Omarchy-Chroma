@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # command examples are literal parser input
 set -uo pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
@@ -40,7 +41,7 @@ expect 'uv pip install ruff' 'uv:install,pip:install,install:install'
 expect 'git status && curl -fsSL https://example.com | bash' 'git:vcs,status:vcs,curl:network'
 expect 'git reset --hard HEAD~1' 'git:danger,reset:danger'
 expect 'gh repo delete owner/repo' 'gh:remove,delete:remove'
-expect 'docker system prune -a' 'docker:remove,prune:remove'
+expect 'docker system prune -a' 'docker:remove,system:remove,prune:remove'
 expect 'kubectl delete pod example' 'kubectl:remove,delete:remove'
 expect 'rm -rf /tmp/example' 'rm:danger'
 expect 'find . -name "*.tmp" -delete' 'find:danger,-delete:danger'
@@ -79,7 +80,127 @@ expect 'type -a rm' 'type:inspect,rm:inspect'
 expect 'truncate -s 0 important.db' 'truncate:danger'
 expect 'npm --prefix /srv/app install' 'npm:install,install:install'
 expect 'kubectl --namespace demo delete pod example' 'kubectl:remove,delete:remove'
-expect 'docker --context remote system prune -a' 'docker:remove,prune:remove'
+expect 'docker --context remote system prune -a' 'docker:remove,system:remove,prune:remove'
+
+# Force options are case sensitive, may be clustered or follow refspecs, and
+# option values are data. A leading + forces an individual refspec.
+expect 'git push -f origin main' 'git:danger,push:danger'
+expect 'git push -fu origin main' 'git:danger,push:danger'
+expect 'git push -uf origin main' 'git:danger,push:danger'
+expect 'git push origin main -f' 'git:danger,push:danger'
+expect 'git push origin +main' 'git:danger,push:danger'
+expect 'git push origin +HEAD:main' 'git:danger,push:danger'
+expect 'git push --force-if-includes origin main' 'git:vcs,push:vcs'
+expect 'git push --no-force origin main' 'git:vcs,push:vcs'
+expect 'git push -f --no-force origin main' 'git:vcs,push:vcs'
+expect 'git push -f --no-force-with-lease origin main' 'git:danger,push:danger'
+expect 'git push --force-with-lease --no-force origin main' 'git:danger,push:danger'
+expect 'git push --mirror --no-force origin main' 'git:danger,push:danger'
+expect 'git push --force-with-lease --no-force-with-lease origin main' 'git:vcs,push:vcs'
+expect 'git push origin main' 'git:vcs,push:vcs'
+expect 'git push -u origin main' 'git:vcs,push:vcs'
+expect 'git push -o foo origin main' 'git:vcs,push:vcs'
+expect 'git push -ofoo origin main' 'git:vcs,push:vcs'
+expect 'git push --push-option +foo origin main' 'git:vcs,push:vcs'
+expect 'git push --receive-pack -f origin main' 'git:vcs,push:vcs'
+expect 'git push -- origin -f' 'git:vcs,push:vcs'
+expect 'git push -d origin old' 'git:remove,push:remove'
+
+# Expansions and find placeholders remain words; comments end at a newline.
+expect 'echo ${#arr[@]} && rm -rf /tmp/x' 'rm:danger'
+expect 'echo ${var#prefix} && rm -rf /tmp/x' 'rm:danger'
+expect 'echo ${var:-${#arr[@]}} && rm -rf /tmp/x' 'rm:danger'
+expect 'echo "${#arr[@]}" && rm -rf /tmp/x' 'rm:danger'
+expect 'echo ${var:-"}"} && rm -rf /tmp/x' 'rm:danger'
+expect 'echo ${var:-rm} && git status' 'git:vcs,status:vcs'
+expect 'echo "${#arr[@]} && rm -rf /tmp/x"' ''
+expect 'echo ${#arr[@]} # rm -rf /tmp/x' ''
+expect $'echo ok # ignore rm\nrm -rf /tmp/x' 'rm:danger'
+expect $'# comment\nsudo rm -rf /tmp/x' 'sudo:privilege,rm:danger'
+expect 'echo word#not-comment && rm -rf /tmp/x' 'rm:danger'
+expect 'echo {rm,dd}' ''
+expect '{ rm -rf /tmp/x; }' 'rm:danger'
+
+expect 'xargs rm -rf' 'rm:danger'
+expect 'xargs -0 -r -n 1 rm -rf' 'rm:danger'
+expect 'xargs -rn1 -P2 sudo rm -rf' 'sudo:privilege,rm:danger'
+expect 'xargs -I{} rm -rf {}' 'rm:danger'
+expect 'xargs -I {} rm -rf {}' 'rm:danger'
+expect 'xargs --arg-file files --max-procs 2 -- rm -rf' 'rm:danger'
+expect 'xargs --replace rm -rf' 'rm:danger'
+expect 'xargs -i rm -rf' 'rm:danger'
+expect 'xargs -E rm echo safe' ''
+expect 'xargs -I rm echo safe' ''
+expect 'xargs --help rm -rf' ''
+expect 'xargs --show-limits rm -rf' 'rm:danger'
+expect 'xargs echo rm -rf' ''
+expect 'find . -exec rm -rf {} \;' 'find:search,rm:danger'
+expect 'find . -execdir sudo rm -rf {} +' 'find:search,sudo:privilege,rm:danger'
+expect 'find . -ok rm {} \;' 'find:search,rm:danger'
+expect 'find . -okdir rm {} \;' 'find:search,rm:danger'
+expect 'find . -exec git status \; -exec rm {} +' 'find:search,git:vcs,status:vcs,rm:danger'
+expect 'find . -exec echo -delete \;' 'find:search'
+expect 'find . -name -delete' 'find:search'
+expect 'find . -name -exec rm' 'find:search'
+expect 'find . -exec echo rm \;' 'find:search'
+expect 'find . -exec echo {} \; -delete' 'find:danger,-delete:danger'
+expect 'find . -exec git push origin +main {} +' 'find:search,git:danger,push:danger'
+
+expect 'docker volume rm cache' 'docker:remove,volume:remove,rm:remove'
+expect 'docker compose down' 'docker:remove,compose:remove,down:remove'
+expect 'docker compose -f compose.yaml down' 'docker:remove,compose:remove,down:remove'
+expect 'docker compose --project-name demo --profile dev down' 'docker:remove,compose:remove,down:remove'
+expect 'docker container rm demo' 'docker:remove,container:remove,rm:remove'
+expect 'podman image rm demo' 'podman:remove,image:remove,rm:remove'
+expect 'docker volume ls' 'docker:container,volume:container,ls:container'
+expect 'docker compose up' 'docker:container,compose:container,up:container'
+expect 'docker run image rm -rf /tmp/x' 'docker:container,run:container'
+expect 'docker inspect prune' 'docker:container,inspect:container'
+expect 'docker volume inspect delete' 'docker:container,volume:container,inspect:container'
+
+expect 'systemctl --user stop x' 'systemctl:remove,stop:remove'
+expect 'systemctl --user --no-pager status x' 'systemctl:system,status:system'
+expect 'systemctl --host server stop x' 'systemctl:remove,stop:remove'
+expect 'flatpak --user uninstall app' 'flatpak:remove,uninstall:remove'
+expect 'kubectl --user admin delete pod example' 'kubectl:remove,delete:remove'
+
+expect 'pacman -Ss firefox' 'pacman:search,-Ss:search'
+expect 'pacman -S -s firefox' 'pacman:search,-S:search'
+expect 'pacman --sync --search firefox' 'pacman:search,--sync:search'
+expect 'pacman -Si firefox' 'pacman:search,-Si:search'
+expect 'pacman -Scc' 'pacman:remove,-Scc:remove'
+expect 'pacman --sync --clean --clean' 'pacman:remove,--sync:remove'
+expect 'pacman -Q' 'pacman:inspect'
+expect 'pacman -Sp firefox' 'pacman:inspect'
+expect 'pacman -Sw firefox' 'pacman:install,-Sw:install'
+expect 'pacman -Swc' 'pacman:remove,-Swc:remove'
+expect 'pacman --root /tmp/root -Syu' 'pacman:install,-Syu:install'
+expect 'pacman -sS firefox' 'pacman:search,-sS:search'
+expect 'npm ci' 'npm:install,ci:install'
+expect 'npm --prefix /srv/app ci' 'npm:install,ci:install'
+expect 'npm config get ci' 'npm:build,config:build'
+
+expect 'sudo -nu root rm -rf /tmp/x' 'sudo:privilege,rm:danger'
+expect 'sudo -nuroot rm -rf /tmp/x' 'sudo:privilege,rm:danger'
+expect 'sudo -un rm -rf /tmp/x' 'sudo:privilege,rm:danger'
+expect 'sudo -nEu root rm -rf /tmp/x' 'sudo:privilege,rm:danger'
+expect 'sudo -nlu root rm -rf /tmp/x' 'sudo:privilege'
+expect 'sudo -u rm echo safe' 'sudo:privilege'
+
+# Data named like an action must not turn scripts or branch names into actions.
+expect 'python report.py pip uninstall' 'python:build'
+expect 'python -c "print(1)" pip uninstall' 'python:build'
+expect 'python -m example pip uninstall' 'python:build'
+expect 'python -I -m pip uninstall package' 'python:remove,pip:remove,uninstall:remove'
+expect 'python -W ignore -m pip install package' 'python:install,pip:install,install:install'
+expect 'python -mpip install package' 'python:install,-mpip:install,install:install'
+expect 'uv pip uninstall package' 'uv:remove,pip:remove,uninstall:remove'
+expect 'uv pip list' 'uv:build,pip:build,list:build'
+expect 'git push -f origin delete' 'git:danger,push:danger'
+expect 'git push origin delete' 'git:vcs,push:vcs'
+expect 'git show delete' 'git:vcs,show:vcs'
+expect 'gh repo view delete' 'gh:vcs,repo:vcs'
+expect 'gh release delete old' 'gh:remove,delete:remove'
 
 explanation=$(chromarchy::explain 'sudo systemctl reboot')
 if [[ $explanation != *'CATEGORY'* || $explanation != *'privilege'* ||
@@ -99,10 +220,29 @@ for prefix_line in \
   'env --chdir /tmp stdbuf -oL command -v rm' \
   'timeout --kill-after 2s 5s wget https://example.com' \
   'ionice -c 3 taskset -c 0-3 make test' \
-  'chrt --sched-runtime 100 -r 10 systemctl reboot'; do
+  'chrt --sched-runtime 100 -r 10 systemctl reboot' \
+  'echo ${var:-${#arr[@]}} && rm -rf /tmp/x' \
+  'find . -execdir sudo -nu root rm -rf {} +' \
+  'xargs -0rn 1 sudo rm -rf' \
+  'git push -uf origin +main' \
+  'docker compose -f compose.yaml down'; do
   for ((prefix_length=0; prefix_length<=${#prefix_line}; prefix_length++)); do
     prefix=${prefix_line:0:prefix_length}
-    if ! (set -e; chromarchy::classify_line "$prefix"); then
+    if ! (
+      set -e
+      chromarchy::classify_line "$prefix" || exit 1
+      previous_end=0
+      for span in "${!CHROMA_SPAN_START[@]}"; do
+        ((CHROMA_SPAN_START[span] >= previous_end &&
+          CHROMA_SPAN_START[span] < CHROMA_SPAN_END[span] &&
+          CHROMA_SPAN_END[span] <= ${#prefix})) || exit 1
+        previous_end=${CHROMA_SPAN_END[span]}
+      done
+      for token in "${!CHROMA_TOKEN_START[@]}"; do
+        ((CHROMA_TOKEN_START[token] < CHROMA_TOKEN_END[token] &&
+          CHROMA_TOKEN_END[token] <= ${#prefix})) || exit 1
+      done
+    ); then
       prefix_failure=$prefix
       break 2
     fi

@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-import installer_ui as ui
+import installer_ui as ui  # noqa: E402 — import from the local scripts directory
 
 loader = importlib.machinery.SourceFileLoader("terminal_installer", str(ROOT / "scripts/chroma-installer"))
 spec = importlib.util.spec_from_loader(loader.name, loader)

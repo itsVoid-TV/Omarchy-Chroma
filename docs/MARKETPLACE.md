@@ -1,10 +1,21 @@
 # Marketplace review
 
-The active submission is [omacom/omarchy-plugin-marketplace#8501](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501).
-The requested listing name is **Omarchy-Chroma**; the manifest still uses
+The accepted submission is [omacom/omarchy-plugin-marketplace#8501](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501).
+The published listing name is **Command Chroma**; the repository uses **Omarchy-Chroma** and the manifest uses
 **Command Chroma** and permanent ID `io.github.itsvoid-tv.command-chroma`.
 These identify the same terminal-highlighting project. No repository or ID
 rename is part of this fix.
+
+## Listing decision — September 29, 2026
+
+The [maintainer accepted](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
+the bounded helper output, pinned/checksummed and size-bounded download, and
+reported capabilities for exact commit `7b04ed1ce21ade3ac75d7aad483b3d99f0c38d0d`.
+The [bot confirmed publication](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889554687)
+as Command Chroma. The issue is closed with `listed`, `approved-and-verified`
+and `manual-setup`; Bash setup remains an explicit terminal action. New commits
+do not inherit approval of that snapshot. Native Omarchy/Wayland acceptance
+remains open.
 
 ## Revision 0.4.3
 
@@ -54,12 +65,11 @@ See [the verification and fork audit](REVIEW-2026-09-19.md),
 The original 0.4.0 submission draft is retained in `MARKETPLACE_SUBMISSION.md`
 for history; it is not the current review evidence.
 
-## Review handoff
+## Historical review handoff (completed for `7b04ed1`)
 
-Post the complete tested 40-character commit SHA, link its successful CI run,
-and explain both bounded helper output and the ble.sh download cap in the
-existing issue. Approval
-and listing remain the maintainer's decision. Automated test success does not
+The owner posted the tested 40-character commit SHA, CI run and both fixes in
+the existing issue; the maintainer subsequently approved that snapshot.
+Any future listing review remains the maintainer's decision. Automated test success does not
 establish native Omarchy/Wayland acceptance or a security certification.
 
 No sudo, system package installation, telemetry, or terminal-history access is

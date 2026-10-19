@@ -1,7 +1,10 @@
 # Testing Command Chroma 0.4.3
 
-The plugin is available from `main`, but native Omarchy acceptance and Marketplace
-admission remain pending. The repository is still `itsVoid-TV/Omarchy-Chroma`.
+The plugin is available from `main` and [listed in the Marketplace](https://omarchyplugins.com/plugin.html?id=io.github.itsvoid-tv.command-chroma).
+The [maintainer approved commit `7b04ed1`](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
+on 29 September 2026. That listing decision applies to that snapshot; native
+Omarchy/Wayland acceptance remains pending. The repository is still
+`itsVoid-TV/Omarchy-Chroma`.
 
 ## Try the plugin on Omarchy Quattro
 
