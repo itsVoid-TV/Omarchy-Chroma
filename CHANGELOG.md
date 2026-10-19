@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+- Recognize Git force-push short options, option clusters and forced refspecs;
+  keep option values and ordinary pushes out of the danger category.
+- Preserve parameter expansions as words and resume classification after
+  multiline comments. Highlight commands behind xargs and find exec actions.
+- Distinguish nested Docker/Podman removal, boolean systemctl/Flatpak user
+  options, pacman searches/cache cleanup and npm ci.
+- Parse combined sudo options without losing the command or query semantics.
+- Limit Python pip recognition to module invocation, keep uv pip spans in the
+  actual action category, and distinguish Git/GitHub action words from data
+  such as branches or repositories named `delete`.
+- Preserve .bashrc backup bytes, including non-UTF-8 and CRLF, and point loader
+  recovery messages to the source-folder setup command.
+- Reconcile Marketplace documentation with the September 29 listing decision
+  for `7b04ed1`; native-device acceptance remains open. Separate general
+  troubleshooting from the Starship note and label historical review material.
+- Pin CI to Ubuntu 24.04, test pull requests and main pushes without duplicate
+  feature-branch push runs, cache the pinned ttfx build, and enforce Ruff.
+
+## Marketplace listing — 2026-09-29
+
+- [Maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
+  and [publication](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889554687)
+  apply to the exact 0.4.3 snapshot `7b04ed1ce21ade3ac75d7aad483b3d99f0c38d0d`.
+  The earlier pending-admission notes below describe their historical snapshots.
+
 ## 0.4.3 — 2026-09-29
 
 - Limited the pinned ble.sh archive to 8 MiB while downloading. curl rejects
@@ -31,21 +58,22 @@
   including delayed keymaps, opt-out, cancellation and diagnostic side effects.
 - Made configuration regression assertions fail the suite immediately.
 
-## 0.4.0 — Command Chroma plugin (development)
+## 0.4.0 — 2026-09-10 (Command Chroma plugin development)
 
 - Prepared publication on main with the standard Omarchy add command, a main
   ZIP bootstrap and a documented transition for existing development checkouts.
 - Added verified terminal captures in Catppuccin, Vantablack and White, clearly
   labelled Qt dashboard examples, root Marketplace preview and a sourced review.
 - Prepared a Marketplace request with native-device limitations disclosed;
-  owner checklist/text approval and Marketplace admission remain pending.
+  owner checklist/text approval and Marketplace admission were pending then.
 - Moved the first-run installer entirely into the terminal, in English, using
   Omarchy's `ttfx` screensaver engine (original `tte` fallback) for the Chroma logo.
 - Added review, explicit terminal consent, real progress, visible errors, safe
   preview mode, no-motion/no-color options, narrow-layout and static fallbacks.
 - Removed the superseded QML setup wizard; the panel now opens the terminal
   without granting Bash consent or tying the installer to the panel's lifetime.
-- Added a short colored `./setup` bootstrap for testing the non-default branch;
+- Added a short colored `./setup` bootstrap for testing the non-default branch
+  (superseded by the local-source bootstrap in 0.4.1);
   it creates a validated Git checkout, then interactively continues to a separate
   Bash review in the same terminal. `--yes` alone still confirms only the widget.
 - Added an Omarchy Quattro bar-widget manifest, terminal icon and native panel.
