@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../Model.js" as Model
@@ -10,6 +11,8 @@ FocusScope {
   property bool failed: false
   property string message: ""
   property string output: ""
+  property string aiTranscript: ""
+  property bool aiBusy: false
   property color ink: "#eeeeee"
   property color surface: "#171717"
   property color accent: ink
@@ -36,6 +39,14 @@ FocusScope {
       if (action === "legend") root.showLegend = true;
       root.requested(action, false);
     }
+  }
+
+  function sendAi(prompt) {
+    if (root.aiBusy || !prompt || !prompt.trim()) return;
+    root.aiTranscript += "You: " + prompt.trim() + "\n";
+    root.aiBusy = true;
+    aiProcess.command = ["python3", Qt.resolvedUrl("../scripts/chroma-ai-agent.py").toString().replace(/^file:\/\//, ""), "--once", prompt.trim()];
+    aiProcess.running = true;
   }
 
   function confirmPending() {
@@ -247,6 +258,59 @@ FocusScope {
         background: Rectangle { color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.06) }
       }
 
+      Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: aiColumn.implicitHeight + 24
+        radius: 5
+        color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.06)
+        ColumnLayout {
+          id: aiColumn
+          anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+          spacing: 8
+          Text {
+            Layout.fillWidth: true
+            text: "AI STYLIST (local)"
+            textFormat: Text.PlainText
+            color: root.ink
+            font { family: root.fontFamily; pixelSize: root.fontSize; bold: true }
+          }
+          ScrollView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 160
+            clip: true
+            TextArea {
+              text: root.aiTranscript
+              textFormat: TextEdit.PlainText
+              readOnly: true
+              selectByMouse: true
+              color: root.ink
+              font { family: "monospace"; pixelSize: root.fontSize - 1 }
+              wrapMode: TextEdit.WrapAnywhere
+              background: Rectangle { color: "transparent" }
+            }
+          }
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            TextField {
+              id: aiInput
+              Layout.fillWidth: true
+              placeholderText: "Ask the stylist…"
+              color: root.ink
+              font { family: root.fontFamily; pixelSize: root.fontSize }
+              onAccepted: root.sendAi(text)
+            }
+            ActionButton {
+              text: root.aiBusy ? "…" : "Send"
+              ink: root.ink; surface: root.surface; accent: root.accent
+              font { family: root.fontFamily; pixelSize: root.fontSize }
+              enabled: !root.aiBusy
+              onClicked: { root.sendAi(aiInput.text); aiInput.text = ""; }
+            }
+          }
+        }
+      }
+
       ColumnLayout {
         Layout.fillWidth: true
         visible: root.showLegend
@@ -310,6 +374,19 @@ FocusScope {
         enabled: root.snapshot.installed === true && !root.busy && !root.pendingAction
         onClicked: root.choose("uninstall")
       }
+    }
+  }
+
+  Process {
+    id: aiProcess
+    stdout: StdioCollector { id: aiStdout; waitForEnd: true }
+    stderr: StdioCollector { id: aiStderr; waitForEnd: true }
+    onExited: function(code) {
+      root.aiBusy = false;
+      var text = aiStdout.text.trim();
+      if (!text) text = aiStderr.text.trim();
+      if (!text) text = "(no response)";
+      root.aiTranscript += "Assistant: " + text + "\n\n";
     }
   }
 }

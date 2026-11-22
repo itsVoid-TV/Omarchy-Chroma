@@ -17,7 +17,7 @@ Item {
     Qt.resolvedUrl("scripts/chroma-control").toString().replace(/^file:\/\//, ""))
 
   function request(name, confirmed) {
-    if (["status", "inspect", "installer", "ai", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
+    if (["status", "inspect", "installer", "ai", "ai-chat", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
     if (Model.needsConfirmation(name) && !confirmed) return;
     if (root.busy) {
       // Opening during the initial passive check must still load the palette.
@@ -36,6 +36,21 @@ Item {
     if (confirmed || name === "reload") argv.push("--confirm");
     runner.command = argv;
     watchdog.interval = 30000;
+    watchdog.restart();
+    runner.running = true;
+  }
+
+  function requestAiChat(prompt) {
+    if (root.busy) return;
+    root.action = "ai-chat";
+    root.busy = true;
+    root.timedOut = false;
+    root.failed = false;
+    root.message = "AI Stylist is thinking…";
+    root.output = "";
+    var argv = ["python3", root.helper, "ai-chat", "--prompt", prompt];
+    runner.command = argv;
+    watchdog.interval = 120000;
     watchdog.restart();
     runner.running = true;
   }

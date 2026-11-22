@@ -347,6 +347,7 @@ def main():
     parser.add_argument("action", choices=["status", "inspect", "setup", "enable", "disable",
                                             "reload", "doctor", "legend", "uninstall", "installer"])
     parser.add_argument("--confirm", action="store_true", help="explicit consent for changing the Bash integration")
+    parser.add_argument("--prompt", default="", help="prompt text for ai-chat")
     args = parser.parse_args()
     mutating = args.action in ("setup", "enable", "disable", "reload", "uninstall")
     lock = None
@@ -372,6 +373,15 @@ def main():
             message = open_installer()
         elif args.action == "ai":
             message = open_ai()
+        elif args.action == "ai-chat":
+            if not args.prompt:
+                raise ValueError("ai-chat requires --prompt")
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "chroma-ai-agent.py"), "--once", args.prompt],
+                capture_output=True, text=True, timeout=120)
+            output = clean((proc.stdout + proc.stderr).strip())
+            ok = proc.returncode == 0
+            message = "AI Stylist replied." if ok else "AI Stylist failed."
         data = control.status() if args.action in ("status", "installer") else control.inspect()
         if args.action == "doctor":
             ok, output = control.doctor(data)

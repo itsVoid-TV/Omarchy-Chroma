@@ -78,10 +78,12 @@ def run_commands(commands):
 
 
 def main():
-    if len(sys.argv) < 2:
+    once = "--once" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--once"]
+    if not args:
         print("Usage: chroma ai \"your styling request\"")
         sys.exit(2)
-    request = " ".join(sys.argv[1:])
+    request = " ".join(args)
 
     runtime = detect_runtime()
     if not runtime:
@@ -176,6 +178,8 @@ def main():
         if commands:
             run_commands(commands)
 
+        if once:
+            break
         user_input = input("You (or 'done' to finish): ").strip()
         if user_input.lower() in ("done", "exit", "quit", ""):
             break
