@@ -14,6 +14,7 @@ FocusScope {
   property string aiTranscript: ""
   property bool aiBusy: false
   property string aiProposed: ""
+  property int typingStep: 0
   property string aiHistoryFile: ""
   property color ink: "#eeeeee"
   property color surface: "#171717"
@@ -282,7 +283,7 @@ FocusScope {
             clip: true
             TextArea {
               text: root.aiTranscript
-              textFormat: TextEdit.PlainText
+              textFormat: TextEdit.MarkdownText
               readOnly: true
               selectByMouse: true
               color: root.ink
@@ -313,7 +314,7 @@ FocusScope {
           Text {
             Layout.fillWidth: true
             visible: root.aiBusy
-            text: "Assistant is typing…"
+            text: "Assistant is typing" + ".".repeat(root.typingStep + 1)
             textFormat: Text.PlainText
             color: root.ink
             font { family: root.fontFamily; pixelSize: root.fontSize - 1; italic: true }
@@ -344,16 +345,30 @@ FocusScope {
                 font { family: "monospace"; pixelSize: root.fontSize - 1 }
                 wrapMode: Text.WrapAnywhere
               }
-              ActionButton {
-                Layout.fillWidth: true
-                text: "Apply proposed"
-                ink: root.ink; surface: root.surface; accent: root.accent
-                font { family: root.fontFamily; pixelSize: root.fontSize }
-                enabled: !root.aiBusy
-                onClicked: {
-                  root.aiTranscript += "Applying proposed commands…\n";
-                  aiApplyProc.command = ["bash", "-c", root.aiProposed.split("\n").map(function(c){return c.trim();}).filter(function(c){return c.length>0;}).map(function(c){return c + " ;";}).join(" ")];
-                  aiApplyProc.running = true;
+              Repeater {
+                model: root.aiProposed.split("\n").map(function(c){return c.trim();}).filter(function(c){return c.length>0;})
+                RowLayout {
+                  Layout.fillWidth: true
+                  spacing: 6
+                  Text {
+                    Layout.fillWidth: true
+                    text: modelData
+                    textFormat: Text.PlainText
+                    color: root.ink
+                    font { family: "monospace"; pixelSize: root.fontSize - 1 }
+                    wrapMode: Text.WrapAnywhere
+                  }
+                  ActionButton {
+                    text: "Apply"
+                    ink: root.ink; surface: root.surface; accent: root.accent
+                    font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+                    enabled: !root.aiBusy
+                    onClicked: {
+                      root.aiTranscript += "Applying: " + modelData + "\n";
+                      aiApplyProc.command = ["bash", "-c", modelData];
+                      aiApplyProc.running = true;
+                    }
+                  }
                 }
               }
             }
@@ -487,5 +502,12 @@ FocusScope {
       root.aiTranscript += "Apply result: " + t + "\n\n";
       root.aiProposed = "";
     }
+  }
+  Timer {
+    id: typingTimer
+    interval: 400
+    repeat: true
+    running: root.aiBusy
+    onTriggered: root.typingStep = (root.typingStep + 1) % 4
   }
 }
