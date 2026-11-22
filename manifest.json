@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.itsvoid-tv.command-chroma",
   "name": "Omarchy Chroma Studio",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": "itsVoid-TV",
   "license": "MIT",
   "description": "The styling centre for your entire Omarchy system: theme-aware Bash highlighting, a native control panel, guided lessons, and a local AI stylist.",
