@@ -310,6 +310,13 @@ FocusScope {
               enabled: !root.aiBusy
               onClicked: { root.sendAi(aiInput.text); aiInput.text = ""; }
             }
+            ActionButton {
+              text: "Stop"
+              ink: root.ink; surface: root.surface; accent: root.accent
+              font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+              enabled: root.aiBusy
+              onClicked: { aiProcess.running = false; root.aiBusy = false; root.aiTranscript += "\n(stopped)\n\n"; }
+            }
           }
           Text {
             Layout.fillWidth: true
