@@ -92,6 +92,8 @@ def main():
         print("  curl -fsSL https://opencode.ai/install | bash")
         sys.exit(1)
 
+    history_file = os.path.expanduser("~/.local/state/omarchy-chroma/ai-chat.log")
+    os.makedirs(os.path.dirname(history_file), exist_ok=True)
     print(f"Omarchy Chroma AI Stylist — runtime: {runtime}")
     print(f"Request: {request}\n")
 
@@ -158,6 +160,12 @@ def main():
             reply = call_openai(base_url, messages, model)
         print("\n" + reply + "\n")
         messages.append({"role": "assistant", "content": reply})
+        try:
+            with open(history_file, "a") as hf:
+                hf.write("You: " + request + "\n")
+                hf.write("Assistant: " + reply + "\n\n")
+        except OSError:
+            pass
 
         # Extract proposed commands if present.
         commands = []

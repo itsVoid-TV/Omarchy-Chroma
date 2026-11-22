@@ -13,6 +13,7 @@ FocusScope {
   property string output: ""
   property string aiTranscript: ""
   property bool aiBusy: false
+  property string aiHistoryFile: ""
   property color ink: "#eeeeee"
   property color surface: "#171717"
   property color accent: ink
@@ -308,6 +309,14 @@ FocusScope {
               onClicked: { root.sendAi(aiInput.text); aiInput.text = ""; }
             }
           }
+          ActionButton {
+            Layout.fillWidth: true
+            text: "Clear chat"
+            ink: root.ink; surface: root.surface; accent: root.accent
+            font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+            enabled: !root.aiBusy
+            onClicked: { root.aiTranscript = ""; aiClearProc.running = true; }
+          }
         }
       }
 
@@ -388,5 +397,19 @@ FocusScope {
       if (!text) text = "(no response)";
       root.aiTranscript += "Assistant: " + text + "\n\n";
     }
+  }
+
+  Process {
+    id: aiHistoryLoader
+    command: ["bash", "-c", "cat ~/.local/state/omarchy-chroma/ai-chat.log 2>/dev/null || true"]
+    stdout: StdioCollector { id: aiHistoryStdout; waitForEnd: true }
+    onExited: function(code) { root.aiTranscript = aiHistoryStdout.text; }
+  }
+  Component.onCompleted: aiHistoryLoader.running = true
+
+  Process {
+    id: aiClearProc
+    command: ["bash", "-c", ": > ~/.local/state/omarchy-chroma/ai-chat.log"]
+    running: false
   }
 }
