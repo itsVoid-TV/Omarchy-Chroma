@@ -57,6 +57,10 @@ chroma doctor
 extract it, open a terminal inside, and run `./setup` (or `python3 setup` if permissions
 were stripped). Already have the checkout? Run `./setup --bash`.
 
+> **ZIP installs:** `omarchy plugin update` does **not** apply to a ZIP snapshot. If you
+> installed from ZIP, replace the widget, or switch to a Git-managed install with
+> `omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable`.
+
 **Safe preview (no changes):** `./setup --preview`
 
 Skip to: [Chapter 6](#chapter-6--command-highlighting-chroma) if you only want highlighting.
@@ -109,8 +113,9 @@ omarchy-theme-install https://github.com/<user>/omarchy-<name>-theme
 omarchy-theme-update   # keep them fresh
 ```
 
-**Security note:** installed themes are stripped of Lua/terminal configs at install time.
-A theme is colours + wallpapers only.
+**Security note:** on Omarchy **4.0.1+**, installed themes are stripped of Lua/terminal
+configs at install time (the filter was added in 4.0.1). Upgrade to 4.0.1 or newer
+before installing community themes. A theme is colours + wallpapers only.
 
 ![Theme selector with live previews](https://omarchy.org/manual/images/tokyo-night-preview.webp)
 
@@ -127,12 +132,13 @@ A theme is just a folder: `~/.config/omarchy/themes/<name>/` with colour files p
 
 1. Copy an existing theme:
    ```bash
-   cp -r ~/.config/omarchy/themes/tokyo-night ~/.config/omarchy/themes/my-theme
+   cp -r /usr/share/omarchy/themes/tokyo-night ~/.config/omarchy/themes/my-theme
    ```
-2. Edit the colour files (terminal, btop, notifications, bar, lock screen) and drop
-   wallpapers into `backgrounds/`.
+2. Set the terminal palette in `colors.toml`. Edit the other colour files (btop,
+   notifications, bar, lock screen) and drop wallpapers into `backgrounds/`.
 3. Reopen the theme menu — your theme appears instantly.
-4. Publish on GitHub; anyone installs it with `omarchy-theme-install`.
+4. Publish on GitHub; anyone installs it with `omarchy-theme-install`. Installs drop
+   terminal configs, which are regenerated from `colors.toml`.
 
 **What Chroma adds:** it reads `colors.toml` as *data* (never sourced), lifts faint
 colours to a 5.5:1 contrast target, and reports the worst contrast in `chroma doctor`.
@@ -174,6 +180,11 @@ omarchy plugin add <git-url> --enable
 omarchy plugin update <plugin-id>
 omarchy plugin remove <plugin-id>
 ```
+
+> After `omarchy plugin update`, the Git checkout changes but the installed Bash
+> integration stays at the previous version. Open the Chroma dashboard and run
+> **Set up in terminal** if it reports a Bash update, confirm the setup, then open a
+> new terminal. Run `chroma version` to check the loaded version.
 
 **Chroma is one such plugin:** the logo opens a Qt control panel with install/enabled
 status, theme info, contrast, and actions (Set up in terminal, Enable/Disable, Reload
@@ -273,7 +284,9 @@ Expect: theme, exact background colour, `worst contrast >= 5.500`, valid config,
 
 **Force a palette refresh:** `chroma reload`
 
-**Old version still loaded after update:** `exec bash`
+**Old version still loaded after update:** open the Chroma dashboard and run **Set up in
+terminal** if it reports a Bash update, confirm the setup, then open a new terminal.
+`exec bash` only reloads files already installed.
 
 **Bash input broken:** open a clean shell with `bash --norc`, then uninstall or comment
 the marked `omarchy-chroma` block in `~/.bashrc`.
@@ -283,6 +296,7 @@ the marked `omarchy-chroma` block in `~/.bashrc`.
 ```bash
 ~/.local/share/omarchy-chroma/uninstall.sh        # keep config
 ~/.local/share/omarchy-chroma/uninstall.sh --purge  # remove config too
+omarchy plugin remove io.github.itsvoid-tv.command-chroma  # remove the plugin
 ```
 
 `ble.sh` is deliberately kept (other Bash add-ons may use it).
