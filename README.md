@@ -58,7 +58,8 @@ extract it, open a terminal inside, and run `./setup` (or `python3 setup` if per
 were stripped). Already have the checkout? Run `./setup --bash`.
 
 > **ZIP installs:** `omarchy plugin update` does **not** apply to a ZIP snapshot. If you
-> installed from ZIP, replace the widget, or switch to a Git-managed install with
+> installed from ZIP, first remove the widget with
+> `omarchy plugin remove io.github.itsvoid-tv.command-chroma`. Then add the Git-managed install with
 > `omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable`.
 
 **Safe preview (no changes):** `./setup --preview`
@@ -113,9 +114,11 @@ omarchy-theme-install https://github.com/<user>/omarchy-<name>-theme
 omarchy-theme-update   # keep them fresh
 ```
 
-**Security note:** on Omarchy **4.0.1+**, installed themes are stripped of Lua/terminal
-configs at install time (the filter was added in 4.0.1). Upgrade to 4.0.1 or newer
-before installing community themes. A theme is colours + wallpapers only.
+**Security note:** on Omarchy **4.0.1+**, a theme installed with `omarchy-theme-install`
+has its Lua, terminal and `vscode.json` files filtered when it is staged. Upgrade to
+4.0.1 or newer before installing community themes. A theme is colours + wallpapers only.
+Downloaded theme files remain untrusted. Review them before you copy any file into a
+local theme: a copy has no `.git` directory, so Omarchy stages it without the filter.
 
 ![Theme selector with live previews](https://omarchy.org/manual/images/tokyo-night-preview.webp)
 

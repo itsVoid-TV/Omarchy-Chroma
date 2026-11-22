@@ -11,12 +11,12 @@ for candidate in opencode antigravity codex claude ollama llama-cli; do
 done
 
 # OpenAI-compatible local endpoints: require a valid models response, not just any 2xx.
-if curl -fsS --max-time 2 "http://127.0.0.1:11434/api/tags" 2>/dev/null | grep -q '"models"'; then
+if curl -fsS --max-time 2 "http://127.0.0.1:11434/api/tags" 2>/dev/null | grep '"models"' >/dev/null; then
   printf 'openai-compatible:http://127.0.0.1:11434\n'
   exit 0
 fi
 
-if curl -fsS --max-time 2 "http://127.0.0.1:8080/v1/models" 2>/dev/null | grep -q '"data"'; then
+if curl -fsS --max-time 2 "http://127.0.0.1:8080/v1/models" 2>/dev/null | grep '"data"' >/dev/null; then
   printf 'openai-compatible:http://127.0.0.1:8080\n'
   exit 0
 fi
