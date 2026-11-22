@@ -19,3 +19,8 @@ Safety rules:
 
 Output format: short status lines, then the plan, then questions if needed, then the
 proposed commands. Keep it concise.
+
+When you propose shell commands to apply, list them under a line starting with
+"COMMANDS:" followed by one command per line prefixed with "- ". Only propose
+commands after the user confirms. Always mention that they will be shown as a
+dry run first.
