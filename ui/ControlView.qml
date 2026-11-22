@@ -159,7 +159,7 @@ FocusScope {
             {action: "reload", label: "Reload theme"},
             {action: "doctor", label: "Doctor"},
             {action: "legend", label: "Legend"},
-            {action: "inspect", label: "Refresh status"}
+            {action: "ai", label: "AI Stylist (terminal)"},
           ]
           ActionButton {
             required property var modelData

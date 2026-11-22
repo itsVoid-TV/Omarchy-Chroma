@@ -282,15 +282,17 @@ chroma ai "create a custom Omarchy theme based on tokyo-night"
 
 1. **Detect a local AI.** Chroma looks for an already-installed runtime:
    - `opencode` (no account required — recommended)
-   - `ollama`, `llama.cpp`, or any OpenAI-compatible local endpoint
+   - `ollama` at `127.0.0.1:11434`, or an OpenAI-compatible endpoint at `127.0.0.1:8080`
    - `antigravity`, `codex`, `claude` (Claude Code) — if you already use them
 2. **If none is found**, Chroma prints instructions to install OpenCode
    (one command, no signup) and exits.
-3. **Plan → Ask → Apply.** The agent proposes a plan, asks only what is unspecified,
-   then applies with backup + dry-run, exactly like the installer.
+3. **Plan → Ask → Apply (requested, not enforced).** The prompt asks the runtime to
+   propose a plan, ask clarifying questions, and show a dry-run before applying.
+   `chroma ai` does not enforce these steps; the selected runtime may act directly.
 
-**Safety:** every AI change goes through the same consent, backup, and atomic-activation
-logic as manual setup. The agent never blocks a command and never touches `/usr/share/omarchy`.
+**Safety:** `chroma ai` delegates to the selected runtime, which may edit files directly.
+The request and `scripts/ai-stylist-prompt.md` provide instructions (backups, confirmation),
+but they are not guaranteed. Back up relevant files and review changes before applying.
 
 This chapter is the first milestone of the AI Stylist — feedback welcome.
 

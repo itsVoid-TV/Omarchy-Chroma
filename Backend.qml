@@ -17,7 +17,7 @@ Item {
     Qt.resolvedUrl("scripts/chroma-control").toString().replace(/^file:\/\//, ""))
 
   function request(name, confirmed) {
-    if (["status", "inspect", "installer", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
+    if (["status", "inspect", "installer", "ai", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
     if (Model.needsConfirmation(name) && !confirmed) return;
     if (root.busy) {
       // Opening during the initial passive check must still load the palette.
@@ -29,7 +29,7 @@ Item {
     root.timedOut = false;
     if (name !== "status") {
       root.failed = false;
-      root.message = name === "installer" ? "Opening the installer in your terminal…" : "Working…";
+      root.message = name === "installer" ? "Opening the installer in your terminal…" : (name === "ai" ? "Opening the AI Stylist in your terminal…" : "Working…");
       root.output = "";
     }
     var argv = ["python3", root.helper, name];

@@ -32,9 +32,9 @@ def load_prompt():
         return "You are the Omarchy Chroma AI Stylist."
 
 
-def call_openai(base_url, messages):
+def call_openai(base_url, messages, model="local"):
     url = base_url.rstrip("/") + "/v1/chat/completions"
-    data = {"model": "local", "messages": messages}
+    data = {"model": model, "messages": messages}
     req = urllib.request.Request(
         url, data=json.dumps(data).encode(), headers={"Content-Type": "application/json"}
     )
@@ -43,9 +43,19 @@ def call_openai(base_url, messages):
     return obj["choices"][0]["message"]["content"]
 
 
-def call_ollama(messages):
+def pick_ollama_model():
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=5) as r:
+            obj = json.load(r)
+        models = [m.get("name") for m in obj.get("models", []) if m.get("name")]
+        return models[0] if models else None
+    except Exception:
+        return None
+
+
+def call_ollama(messages, model):
     url = "http://127.0.0.1:11434/api/chat"
-    data = {"model": "llama3.2", "messages": messages, "stream": False}
+    data = {"model": model, "messages": messages, "stream": False}
     req = urllib.request.Request(
         url, data=json.dumps(data).encode(), headers={"Content-Type": "application/json"}
     )
@@ -87,7 +97,28 @@ def main():
     if runtime in ("opencode", "antigravity", "codex", "claude"):
         system = load_prompt()
         full = system + "\n\nUser request: " + request
-        cmd = [runtime, "run", "--auto", full] if runtime == "opencode" else [runtime, full]
+        if runtime == "opencode":
+            # Resolve a LOCAL provider/model; do not assume OpenCode is local.
+            try:
+                models_out = subprocess.check_output(
+                    ["opencode", "models"], stderr=subprocess.DEVNULL, text=True
+                )
+            except Exception:
+                models_out = ""
+            local_model = None
+            for line in models_out.splitlines():
+                line = line.strip()
+                if any(k in line.lower() for k in ("ollama", "lmstudio", "local", "localhost")):
+                    local_model = line
+                    break
+            if not local_model:
+                print("OpenCode has no local provider configured.")
+                print("Install Ollama or configure a local provider, then retry.")
+                print("  curl -fsSL https://ollama.com/install.sh | sh")
+                sys.exit(1)
+            cmd = ["opencode", "run", "--auto", "--model", local_model, full]
+        else:
+            cmd = [runtime, full]
         subprocess.run(cmd)
         return
 
@@ -109,9 +140,20 @@ def main():
 
     while True:
         if base_url == "http://127.0.0.1:11434":
-            reply = call_ollama(messages)
+            model = pick_ollama_model()
+            if not model:
+                print("No Ollama model available. Pull one first: ollama pull llama3.2")
+                sys.exit(1)
+            reply = call_ollama(messages, model)
         else:
-            reply = call_openai(base_url, messages)
+            # Pick first available model from OpenAI-compatible endpoint.
+            try:
+                with urllib.request.urlopen(base_url.rstrip("/") + "/v1/models", timeout=5) as r:
+                    obj = json.load(r)
+                model = obj["data"][0]["id"] if obj.get("data") else "local"
+            except Exception:
+                model = "local"
+            reply = call_openai(base_url, messages, model)
         print("\n" + reply + "\n")
         messages.append({"role": "assistant", "content": reply})
 
