@@ -13,6 +13,7 @@ FocusScope {
   property string output: ""
   property string aiTranscript: ""
   property bool aiBusy: false
+  property string aiProposed: ""
   property string aiHistoryFile: ""
   property color ink: "#eeeeee"
   property color surface: "#171717"
@@ -309,6 +310,54 @@ FocusScope {
               onClicked: { root.sendAi(aiInput.text); aiInput.text = ""; }
             }
           }
+          Text {
+            Layout.fillWidth: true
+            visible: root.aiBusy
+            text: "Assistant is typing…"
+            textFormat: Text.PlainText
+            color: root.ink
+            font { family: root.fontFamily; pixelSize: root.fontSize - 1; italic: true }
+          }
+          Rectangle {
+            Layout.fillWidth: true
+            visible: root.aiProposed.length > 0
+            implicitHeight: propColumn.implicitHeight + 20
+            radius: 5
+            color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.08)
+            border { color: root.ink; width: 1 }
+            ColumnLayout {
+              id: propColumn
+              anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
+              spacing: 6
+              Text {
+                Layout.fillWidth: true
+                text: "PROPOSED COMMANDS (dry run)"
+                textFormat: Text.PlainText
+                color: root.ink
+                font { family: root.fontFamily; pixelSize: root.fontSize - 1; bold: true }
+              }
+              Text {
+                Layout.fillWidth: true
+                text: root.aiProposed
+                textFormat: Text.PlainText
+                color: root.ink
+                font { family: "monospace"; pixelSize: root.fontSize - 1 }
+                wrapMode: Text.WrapAnywhere
+              }
+              ActionButton {
+                Layout.fillWidth: true
+                text: "Apply proposed"
+                ink: root.ink; surface: root.surface; accent: root.accent
+                font { family: root.fontFamily; pixelSize: root.fontSize }
+                enabled: !root.aiBusy
+                onClicked: {
+                  root.aiTranscript += "Applying proposed commands…\n";
+                  aiApplyProc.command = ["bash", "-c", root.aiProposed.split("\n").map(function(c){return c.trim();}).filter(function(c){return c.length>0;}).map(function(c){return c + " ;";}).join(" ")];
+                  aiApplyProc.running = true;
+                }
+              }
+            }
+          }
           ActionButton {
             Layout.fillWidth: true
             text: "Clear chat"
@@ -396,6 +445,20 @@ FocusScope {
       if (!text) text = aiStderr.text.trim();
       if (!text) text = "(no response)";
       root.aiTranscript += "Assistant: " + text + "\n\n";
+      // Parse proposed commands (lines after "COMMANDS:" prefixed with "- ")
+      var cmds = [];
+      var inC = false;
+      var lines = text.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        var ln = lines[i].trim();
+        if (ln.toUpperCase().indexOf("COMMANDS:") === 0) { inC = true; continue; }
+        if (inC) {
+          if (!ln) { inC = false; continue; }
+          if (ln.indexOf("- ") === 0) cmds.push(ln.substring(2).trim());
+          else inC = false;
+        }
+      }
+      root.aiProposed = cmds.join("\n");
     }
   }
 
@@ -411,5 +474,18 @@ FocusScope {
     id: aiClearProc
     command: ["bash", "-c", ": > ~/.local/state/omarchy-chroma/ai-chat.log"]
     running: false
+  }
+
+  Process {
+    id: aiApplyProc
+    stdout: StdioCollector { id: aiApplyStdout; waitForEnd: true }
+    stderr: StdioCollector { id: aiApplyStderr; waitForEnd: true }
+    onExited: function(code) {
+      var t = aiApplyStdout.text.trim();
+      if (!t) t = aiApplyStderr.text.trim();
+      if (!t) t = "(done)";
+      root.aiTranscript += "Apply result: " + t + "\n\n";
+      root.aiProposed = "";
+    }
   }
 }
