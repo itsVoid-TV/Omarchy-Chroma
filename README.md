@@ -12,7 +12,13 @@ installer, readable contrast, diagnostics, a native Quattro control panel — an
 > The [maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
 > applies to commit `7b04ed1`; native Omarchy/Wayland acceptance remains pending.
 
-![Omarchy Chroma Studio hero](docs/images/dashboard-dark-preview.png)
+<p align="center">
+  <img src="docs/images/hero.svg" alt="Omarchy Chroma Studio — animated hero" width="900" />
+</p>
+
+<p align="center">
+  <img src="preview.png" alt="Omarchy Chroma Studio control panel" width="900" />
+</p>
 
 ---
 
