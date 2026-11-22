@@ -122,6 +122,8 @@ has its Lua, terminal and `vscode.json` files filtered when it is staged. Upgrad
 4.0.1 or newer before installing community themes. A theme is colours + wallpapers only.
 Downloaded theme files remain untrusted. Review them before you copy any file into a
 local theme: a copy has no `.git` directory, so Omarchy stages it without the filter.
+Downloaded theme files remain untrusted. Review them before you copy any file into a
+local theme: a copy has no `.git` directory, so Omarchy stages it without the filter.
 
 ![Theme selector with live previews](https://omarchy.org/manual/images/tokyo-night-preview.webp)
 
