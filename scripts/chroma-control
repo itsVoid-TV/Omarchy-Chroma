@@ -345,7 +345,8 @@ def open_ai():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["status", "inspect", "setup", "enable", "disable",
-                                            "reload", "doctor", "legend", "uninstall", "installer"])
+                                            "reload", "doctor", "legend", "uninstall", "installer",
+                                            "ai", "ai-chat"])
     parser.add_argument("--confirm", action="store_true", help="explicit consent for changing the Bash integration")
     parser.add_argument("--prompt", default="", help="prompt text for ai-chat")
     args = parser.parse_args()

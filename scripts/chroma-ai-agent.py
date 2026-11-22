@@ -43,12 +43,21 @@ def call_openai(base_url, messages, model="local"):
     return obj["choices"][0]["message"]["content"]
 
 
-def pick_ollama_model():
+def pick_ollama_model(preferred=None):
     try:
         with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=5) as r:
             obj = json.load(r)
         models = [m.get("name") for m in obj.get("models", []) if m.get("name")]
-        return models[0] if models else None
+        if not models:
+            return None
+        if preferred and preferred in models:
+            return preferred
+        # Honour a configured model name even if the exact tag differs slightly.
+        if preferred:
+            for m in models:
+                if m.split(":")[0] == preferred.split(":")[0]:
+                    return m
+        return models[0]
     except Exception:
         return None
 
@@ -72,18 +81,26 @@ def run_commands(commands):
     if ans != "y":
         print("Skipped.")
         return
-    for c in commands:
-        print(f"$ {c}")
-        subprocess.run(c, shell=True)
+    script = "set -e\\n" + "\\n".join(commands)
+    print("$ " + " && ".join(commands))
+    proc = subprocess.run(script, shell=True, executable="/bin/bash")
+    if proc.returncode != 0:
+        print(f"Command batch failed (exit {proc.returncode}); later commands were not run.")
 
 
 def main():
     once = "--once" in sys.argv
     args = [a for a in sys.argv[1:] if a != "--once"]
     if not args:
-        print("Usage: chroma ai \"your styling request\"")
-        sys.exit(2)
-    request = " ".join(args)
+        try:
+            request = input("Your styling request: ").strip()
+        except EOFError:
+            request = ""
+        if not request:
+            print("Usage: chroma ai \"your styling request\"")
+            sys.exit(2)
+    else:
+        request = " ".join(args)
 
     runtime = detect_runtime()
     if not runtime:
@@ -112,7 +129,7 @@ def main():
             local_model = None
             for line in models_out.splitlines():
                 line = line.strip()
-                if any(k in line.lower() for k in ("ollama", "lmstudio", "local", "localhost")):
+                if any(k in line.lower() for k in ("ollama", "lmstudio", "localai", "vllm", "llamacpp", "localhost", "127.0.0.1")):
                     local_model = line
                     break
             if not local_model:
@@ -121,6 +138,9 @@ def main():
                 print("  curl -fsSL https://ollama.com/install.sh | sh")
                 sys.exit(1)
             cmd = ["opencode", "run", "--auto", "--model", local_model, full]
+        elif runtime == "codex":
+            # Force Codex into local-provider mode; otherwise it may use cloud.
+            cmd = ["codex", "--oss", full]
         else:
             cmd = [runtime, full]
         subprocess.run(cmd)
@@ -143,20 +163,27 @@ def main():
                 {"role": "user", "content": request}]
 
     while True:
+        preferred = os.environ.get("CHROMA_AI_MODEL")
         if base_url == "http://127.0.0.1:11434":
-            model = pick_ollama_model()
+            model = pick_ollama_model(preferred)
             if not model:
                 print("No Ollama model available. Pull one first: ollama pull llama3.2")
                 sys.exit(1)
             reply = call_ollama(messages, model)
         else:
-            # Pick first available model from OpenAI-compatible endpoint.
+            # Pick an available model from the OpenAI-compatible endpoint.
+            model = "local"
             try:
                 with urllib.request.urlopen(base_url.rstrip("/") + "/v1/models", timeout=5) as r:
                     obj = json.load(r)
-                model = obj["data"][0]["id"] if obj.get("data") else "local"
+                ids = [m.get("id") for m in obj.get("data", []) if m.get("id")]
+                if preferred and preferred in ids:
+                    model = preferred
+                elif ids:
+                    model = ids[0]
             except Exception:
-                model = "local"
+                if preferred:
+                    model = preferred
             reply = call_openai(base_url, messages, model)
         print("\n" + reply + "\n")
         messages.append({"role": "assistant", "content": reply})
