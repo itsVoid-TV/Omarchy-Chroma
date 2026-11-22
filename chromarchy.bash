@@ -22,7 +22,7 @@ for _chromarchy_required in \
   lib/parser.bash \
   lib/layer.bash; do
   if [[ ! -r $CHROMA_ROOT/$_chromarchy_required ]]; then
-    printf 'Omarchy Chroma: incomplete installation in %s; run install.sh again.\n' \
+    printf 'Omarchy Chroma: incomplete installation in %s; run ./setup --bash from a complete Chroma source folder.\n' \
       "$CHROMA_ROOT" >&2
     unset _chromarchy_required
     return 1
@@ -42,7 +42,7 @@ if [[ ! ${BLE_VERSION:-} ]]; then
     fi
   done
   if [[ ! $_chromarchy_blesh ]]; then
-    printf 'Omarchy Chroma: ble.sh was not found. Run %s/install.sh again.\n' "$CHROMA_ROOT" >&2
+    printf 'Omarchy Chroma: ble.sh was not found. Run ./setup --bash from a complete Chroma source folder.\n' >&2
     return 1
   fi
   # Loading detached lets Chroma register its layer before the first render.

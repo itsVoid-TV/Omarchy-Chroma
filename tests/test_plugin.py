@@ -150,6 +150,33 @@ class PluginTests(unittest.TestCase):
         enabled = self.call("enable", "--confirm")
         self.assertTrue(enabled["data"]["enabled"])
 
+    def test_backups_preserve_bytes_for_setup_update_and_removal(self):
+        # A backup must be restorable even when .bashrc is not UTF-8, uses
+        # CRLF or has no final newline. Exercise the public mutation path.
+        original = b"# caf\xe9\r\nexport TEST=1\r\n# final \xff"
+        self.bashrc.write_bytes(original)
+        folder = self.base / "state/omarchy-chroma/backups"
+        for action in ("setup", "setup", "uninstall"):
+            before = self.bashrc.read_bytes()
+            existing = set(folder.glob("*.bak"))
+            self.call(action, "--confirm")
+            created = set(folder.glob("*.bak")) - existing
+            self.assertEqual(len(created), 1)
+            backup = created.pop()
+            self.assertEqual(backup.read_bytes(), before)
+            self.assertEqual(backup.stat().st_mode & 0o777, 0o600)
+
+    def test_backup_of_symlinked_bashrc_preserves_target_bytes(self):
+        original = b"# caf\xe9\r\n"
+        target = self.base / "real bashrc"
+        target.write_bytes(original)
+        self.bashrc.unlink()
+        self.bashrc.symlink_to(target)
+        self.call("setup", "--confirm")
+        self.assertTrue(self.bashrc.is_symlink())
+        backups = list((self.base / "state/omarchy-chroma/backups").glob("*.bak"))
+        self.assertEqual(backups[0].read_bytes(), original)
+
     def test_uninstall_preserves_config_and_dependency(self):
         self.call("setup", "--confirm")
         result = self.call("uninstall", "--confirm")

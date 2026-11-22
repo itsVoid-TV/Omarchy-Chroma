@@ -47,15 +47,23 @@ CURRENT_PROCESS = None
 MAX_CHILD_OUTPUT = 64 * 1024
 
 
-def text_file(path, limit=1024 * 1024):
+def bytes_file(path, limit=1024 * 1024):
     """Bounded reads; do not hang on a FIFO substituted for a config file."""
     try:
         info = path.stat()
     except FileNotFoundError:
-        return ""
+        return b""
     if not stat.S_ISREG(info.st_mode) or info.st_size > limit:
         raise ValueError(f"Not a small regular file: {path}")
-    return path.read_text(encoding="utf-8", errors="replace")
+    with path.open("rb") as stream:
+        content = stream.read(limit + 1)
+    if len(content) > limit:
+        raise ValueError(f"Not a small regular file: {path}")
+    return content
+
+
+def text_file(path, limit=1024 * 1024):
+    return bytes_file(path, limit).decode("utf-8", errors="replace")
 
 
 def clean(text):
@@ -221,8 +229,8 @@ class Control:
         path.parent.mkdir(parents=True, exist_ok=True)
         fd, temporary = tempfile.mkstemp(prefix=".chroma-", dir=path.parent)
         try:
-            with os.fdopen(fd, "w", encoding="utf-8") as stream:
-                stream.write(content)
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(content if isinstance(content, bytes) else content.encode("utf-8"))
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(temporary, path)
@@ -234,7 +242,7 @@ class Control:
         if not self.bashrc.exists():
             return ""
         path = self.runtime / "backups" / f"bashrc-{time.time_ns()}.bak"
-        self.write_state(path, text_file(self.bashrc))
+        self.write_state(path, bytes_file(self.bashrc))
         return str(path)
 
     def mutation(self, action):

@@ -7,7 +7,10 @@ Theme-aware semantic Bash command highlighting for **Omarchy**, an animated Engl
 installer, readable contrast, diagnostics, a native Quattro control panel — and now a
 **styling centre** that teaches you how to make Omarchy truly yours.
 
-Plugin 0.4.3 is available from `main`. Marketplace-verified by `@Hancore_Linux`.
+> Plugin 0.4.3 is available from `main` and listed in the
+> [Omarchy Plugin Marketplace](https://omarchyplugins.com/plugin.html?id=io.github.itsvoid-tv.command-chroma).
+> The [maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
+> applies to commit `7b04ed1`; native Omarchy/Wayland acceptance remains pending.
 
 ![Omarchy Chroma Studio hero](docs/images/dashboard-dark-preview.png)
 
@@ -219,6 +222,23 @@ Chroma colours what a command *does* while you type:
 It works in Foot, Ghostty, Alacritty, Kitty and others because the feature lives in Bash,
 not in one terminal. `ble.sh` emits exact 24-bit colour where supported.
 
+Chroma understands wrappers, their option arguments, and shell chains. This
+includes `sudo`, `env`, `command`, `exec`, `time`, `timeout`, `nice`,
+`stdbuf`, `ionice`, `taskset`, `chrt`, and `xargs`. Commands in `find -exec`,
+`-execdir`, `-ok`, and `-okdir` are classified separately. Parameter expansions
+such as `${#arr[@]}` stay inside their word, and comments end at the newline.
+For example, in:
+
+```bash
+sudo env LANG=C pacman -Syu firefox && git status
+```
+
+With a colorful theme, `sudo` uses its orange role, `pacman -Syu` its yellow
+role, and `git status` its purple role. Monochrome themes retain grayscale hues.
+Arguments such as `firefox` keep normal `ble.sh` syntax highlighting. Query
+forms such as `command -v rm` are shown as inspection rather than falsely
+warning that `rm` will run.
+
 **Commands**
 
 | Command | Purpose |
@@ -273,10 +293,9 @@ This chapter is a preview of the next milestone — feedback welcome.
 
 ## Chapter 8 — Troubleshooting & recovery
 
-**Empty line above the first prompt:** Omarchy’s default Starship sets `add_newline = true`.
-Set `add_newline = false` in `~/.config/starship.toml` and open a new terminal.
+### General diagnostics and recovery
 
-**Check everything:**
+Run:
 
 ```bash
 chroma doctor
@@ -303,6 +322,22 @@ omarchy plugin remove io.github.itsvoid-tv.command-chroma  # remove the plugin
 ```
 
 `ble.sh` is deliberately kept (other Bash add-ons may use it).
+
+Chroma is a visual hint, not a security boundary. It never blocks a command, and a heuristic cannot understand every script, alias, shell function, or program-specific option.
+
+### Empty line above the first prompt
+
+Omarchy's [default Starship configuration](https://github.com/omacom/omarchy/blob/quattro/config/starship.toml)
+sets `add_newline = true`. Starship then inserts an empty line before the first
+prompt in a new terminal. To remove it, edit `~/.config/starship.toml` (or the file
+named by `STARSHIP_CONFIG`) and set:
+
+```toml
+add_newline = false
+```
+
+Open a new terminal to check the change. Chroma does not edit your Starship
+settings as part of Bash installation.
 
 ---
 
