@@ -21,8 +21,8 @@ ShellRoot {
     Rectangle {
       anchors.fill: parent
       gradient: Gradient {
-        GradientStop { position: 0.0; color: "#0b1020" }
-        GradientStop { position: 1.0; color: "#111827" }
+        GradientStop { position: 0.0; color: "#1a1033" }
+        GradientStop { position: 1.0; color: "#0f172a" }
       }
     }
 
@@ -33,50 +33,55 @@ ShellRoot {
 
       RowLayout {
         Layout.fillWidth: true
-        spacing: 16
+        spacing: 20
+        ColumnLayout {
+          spacing: 4
+          Text {
+            text: "Omarchy Chroma Studio"
+            color: "#f8fafc"
+            font.pixelSize: 30
+            font.bold: true
+          }
+          Text {
+            text: "Your styling centre for the entire Omarchy system"
+            color: "#c4b5fd"
+            font.pixelSize: 14
+          }
+          Text {
+            text: "Themes · Plugins · .config · Lessons · Local AI Stylist"
+            color: "#94a3b8"
+            font.pixelSize: 12
+          }
+        }
+        Item { Layout.fillWidth: true }
         Rectangle {
-          width: 44; height: 44; radius: 12
+          width: 72; height: 72; radius: 36
           gradient: Gradient {
-            GradientStop { position: 0.0; color: "#38bdf8" }
-            GradientStop { position: 1.0; color: "#a78bfa" }
+            GradientStop { position: 0.0; color: "#7c3aed" }
+            GradientStop { position: 1.0; color: "#38bdf8" }
           }
           Text {
             anchors.centerIn: parent
             text: "C"
-            color: "#0b1020"
-            font.pixelSize: 22
+            color: "#ffffff"
+            font.pixelSize: 34
             font.bold: true
           }
         }
-        ColumnLayout {
-          spacing: 2
-          Text {
-            text: "Omarchy Chroma Studio"
-            color: "#f8fafc"
-            font.pixelSize: 24
-            font.bold: true
-          }
-          Text {
-            text: "The styling centre for your entire Omarchy system"
-            color: "#94a3b8"
-            font.pixelSize: 13
-          }
-        }
-        Item { Layout.fillWidth: true }
         Button {
           text: "Close"
           onClicked: Qt.quit()
-          background: Rectangle { radius: 8; color: "#1f2937" }
-          contentItem: Text { text: parent.text; color: "#e5e7eb"; horizontalAlignment: Text.AlignHCenter }
+          background: Rectangle { radius: 10; color: "#7c3aed" }
+          contentItem: Text { text: parent.text; color: "#ffffff"; horizontalAlignment: Text.AlignHCenter; font.bold: true }
         }
       }
 
       Rectangle {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        radius: 16
-        color: "#111827"
-        border.color: "#1f2937"
+        radius: 20
+        color: "#1e1b2e"
+        border.color: "#4c1d95"
         border.width: 1
 
         ChromaUi.ControlView {
