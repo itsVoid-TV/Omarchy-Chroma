@@ -7,8 +7,10 @@ Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
 installation paths are kept for compatibility. The GitHub repository has not
 been renamed.
 
-> Plugin 0.4.3 is available from `main`. Marketplace admission and 
->We got the Verification by Marketplace Maintainer @Hancore_Linux and are now available in the Omarchy Plugin Marketplace !
+> Plugin 0.4.3 is available from `main` and listed in the
+> [Omarchy Plugin Marketplace](https://omarchyplugins.com/plugin.html?id=io.github.itsvoid-tv.command-chroma).
+> The [maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
+> applies to commit `7b04ed1`; native Omarchy/Wayland acceptance remains pending.
 
 ## Install on Omarchy Quattro
 
@@ -308,7 +310,10 @@ without loading them or consuming queued bindings.
 
 Chroma understands wrappers, their option arguments, and shell chains. This
 includes `sudo`, `env`, `command`, `exec`, `time`, `timeout`, `nice`,
-`stdbuf`, `ionice`, `taskset`, and `chrt`. For example, in:
+`stdbuf`, `ionice`, `taskset`, `chrt`, and `xargs`. Commands in `find -exec`,
+`-execdir`, `-ok`, and `-okdir` are classified separately. Parameter expansions
+such as `${#arr[@]}` stay inside their word, and comments end at the newline.
+For example, in:
 
 ```bash
 sudo env LANG=C pacman -Syu firefox && git status
@@ -413,20 +418,7 @@ Add `--purge` to remove the user color configuration too. The uninstaller delibe
 
 ## Troubleshooting
 
-### Empty line above the first prompt
-
-Omarchy's [default Starship configuration](https://github.com/omacom/omarchy/blob/quattro/config/starship.toml)
-sets `add_newline = true`. Starship
-then inserts an empty line before the first prompt in a new terminal. To remove
-it, edit `~/.config/starship.toml` (or the file named by `STARSHIP_CONFIG`)
-and set:
-
-```toml
-add_newline = false
-```
-
-Open a new terminal to check the change. Chroma does not edit your Starship
-settings as part of Bash installation.
+### General diagnostics and recovery
 
 Run:
 
@@ -460,6 +452,20 @@ bash --norc
 You can then run the uninstaller or temporarily comment out the marked `omarchy-chroma` block in `~/.bashrc`.
 
 Chroma is a visual hint, not a security boundary. It never blocks a command, and a heuristic cannot understand every script, alias, shell function, or program-specific option.
+
+### Empty line above the first prompt
+
+Omarchy's [default Starship configuration](https://github.com/omacom/omarchy/blob/quattro/config/starship.toml)
+sets `add_newline = true`. Starship then inserts an empty line before the first
+prompt in a new terminal. To remove it, edit `~/.config/starship.toml` (or the file
+named by `STARSHIP_CONFIG`) and set:
+
+```toml
+add_newline = false
+```
+
+Open a new terminal to check the change. Chroma does not edit your Starship
+settings as part of Bash installation.
 
 ## Design and privacy
 

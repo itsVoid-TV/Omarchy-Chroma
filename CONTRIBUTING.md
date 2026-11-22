@@ -6,6 +6,8 @@ Before opening a pull request, run:
 
 ```bash
 bash tests/run.bash
+python3 -m pip install ruff==0.14.14
+ruff check .
 ```
 
 Add a parser fixture for every classification change, including both the
