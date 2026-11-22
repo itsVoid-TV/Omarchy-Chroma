@@ -12,7 +12,13 @@ installer, readable contrast, diagnostics, a native Quattro control panel — an
 > The [maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
 > applies to commit `7b04ed1`; native Omarchy/Wayland acceptance remains pending.
 
-![Omarchy Chroma Studio hero](docs/images/dashboard-dark-preview.png)
+<p align="center">
+  <img src="docs/images/hero.svg" alt="Omarchy Chroma Studio — animated hero" width="900" />
+</p>
+
+<p align="center">
+  <img src="preview.png" alt="Omarchy Chroma Studio control panel" width="900" />
+</p>
 
 ---
 
@@ -269,27 +275,32 @@ by `chroma doctor`.
 
 ## Chapter 7 — AI Stylist (local agent)
 
-> **Coming next.** A local AI agent that applies styling for you — no cloud account needed.
+> **Now available (v1).** A local AI agent that applies styling for you — no cloud account needed.
 
-**Idea:** you type a prompt (“dark minimalist theme, blue accents, matching bar”), and an
-agent plans, asks clarifying questions if needed, and applies the changes through the
-existing Chroma paths (theme files, config, plugins).
+**Usage:**
 
-**How it will work:**
+```bash
+chroma ai "dark minimalist theme with blue accents and matching bar"
+chroma ai "create a custom Omarchy theme based on tokyo-night"
+```
+
+**How it works:**
 
 1. **Detect a local AI.** Chroma looks for an already-installed runtime:
    - `opencode` (no account required — recommended)
-   - `ollama`, `llama.cpp`, or any OpenAI-compatible local endpoint
+   - `ollama` at `127.0.0.1:11434`, or an OpenAI-compatible endpoint at `127.0.0.1:8080`
    - `antigravity`, `codex`, `claude` (Claude Code) — if you already use them
-2. **If none is found**, Chroma prompts you to install OpenCode (one command, no signup)
-   and continues once it is available.
-3. **Plan → Ask → Apply.** The agent proposes a diff, asks only what is unspecified,
-   then applies with backup + dry-run, exactly like the installer.
+2. **If none is found**, Chroma prints instructions to install OpenCode
+   (one command, no signup) and exits.
+3. **Plan → Ask → Apply (requested, not enforced).** The prompt asks the runtime to
+   propose a plan, ask clarifying questions, and show a dry-run before applying.
+   `chroma ai` does not enforce these steps; the selected runtime may act directly.
 
-**Safety:** every AI change goes through the same consent, backup, and atomic-activation
-logic as manual setup. The agent never blocks a command and never touches `/usr/share/omarchy`.
+**Safety:** `chroma ai` delegates to the selected runtime, which may edit files directly.
+The request and `scripts/ai-stylist-prompt.md` provide instructions (backups, confirmation),
+but they are not guaranteed. Back up relevant files and review changes before applying.
 
-This chapter is a preview of the next milestone — feedback welcome.
+This chapter is the first milestone of the AI Stylist — feedback welcome.
 
 ---
 

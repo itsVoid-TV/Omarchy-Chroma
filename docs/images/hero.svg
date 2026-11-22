@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" role="img" aria-label="Omarchy Chroma Studio">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+  <style>
+    @keyframes pulse { 0%,100% { opacity: .6; } 50% { opacity: 1; } }
+    @keyframes slide { 0% { transform: translateX(-20px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+    .title { animation: slide 1.2s ease-out both; }
+    .sub { animation: slide 1.2s ease-out .2s both; }
+    .dot { animation: pulse 2s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .title,.sub,.dot { animation: none; } }
+  </style>
+  <rect width="900" height="260" rx="24" fill="url(#g)"/>
+  <circle cx="80" cy="80" r="10" fill="url(#accent)" class="dot"/>
+  <text x="60" y="120" font-family="system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" fill="#f8fafc" class="title">Omarchy Chroma Studio</text>
+  <text x="60" y="165" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#cbd5e1" class="sub">The styling centre for your entire Omarchy system</text>
+  <text x="60" y="205" font-family="ui-monospace, monospace" font-size="15" fill="#94a3b8" class="sub">themes · plugins · .config · lessons · local AI stylist</text>
+  <rect x="60" y="225" width="220" height="6" rx="3" fill="url(#accent)" class="dot"/>
+</svg>

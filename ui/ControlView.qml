@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Io
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../Model.js" as Model
@@ -10,6 +11,11 @@ FocusScope {
   property bool failed: false
   property string message: ""
   property string output: ""
+  property string aiTranscript: ""
+  property bool aiBusy: false
+  property string aiProposed: ""
+  property int typingStep: 0
+  property string aiHistoryFile: ""
   property color ink: "#eeeeee"
   property color surface: "#171717"
   property color accent: ink
@@ -36,6 +42,14 @@ FocusScope {
       if (action === "legend") root.showLegend = true;
       root.requested(action, false);
     }
+  }
+
+  function sendAi(prompt) {
+    if (root.aiBusy || !prompt || !prompt.trim()) return;
+    root.aiTranscript += "You: " + prompt.trim() + "\n";
+    root.aiBusy = true;
+    aiProcess.command = ["python3", Qt.resolvedUrl("../scripts/chroma-ai-agent.py").toString().replace(/^file:\/\//, ""), "--once", prompt.trim()];
+    aiProcess.running = true;
   }
 
   function confirmPending() {
@@ -159,7 +173,7 @@ FocusScope {
             {action: "reload", label: "Reload theme"},
             {action: "doctor", label: "Doctor"},
             {action: "legend", label: "Legend"},
-            {action: "inspect", label: "Refresh status"}
+            {action: "ai", label: "AI Stylist (terminal)"},
           ]
           ActionButton {
             required property var modelData
@@ -247,6 +261,136 @@ FocusScope {
         background: Rectangle { color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.06) }
       }
 
+      Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: aiColumn.implicitHeight + 24
+        radius: 5
+        color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.06)
+        ColumnLayout {
+          id: aiColumn
+          anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+          spacing: 8
+          Text {
+            Layout.fillWidth: true
+            text: "AI STYLIST (local)"
+            textFormat: Text.PlainText
+            color: root.ink
+            font { family: root.fontFamily; pixelSize: root.fontSize; bold: true }
+          }
+          ScrollView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 160
+            clip: true
+            TextArea {
+              text: root.aiTranscript
+              textFormat: TextEdit.MarkdownText
+              readOnly: true
+              selectByMouse: true
+              color: root.ink
+              font { family: "monospace"; pixelSize: root.fontSize - 1 }
+              wrapMode: TextEdit.WrapAnywhere
+              background: Rectangle { color: "transparent" }
+            }
+          }
+          RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+            TextField {
+              id: aiInput
+              Layout.fillWidth: true
+              placeholderText: "Ask the stylist…"
+              color: root.ink
+              font { family: root.fontFamily; pixelSize: root.fontSize }
+              onAccepted: root.sendAi(text)
+            }
+            ActionButton {
+              text: root.aiBusy ? "…" : "Send"
+              ink: root.ink; surface: root.surface; accent: root.accent
+              font { family: root.fontFamily; pixelSize: root.fontSize }
+              enabled: !root.aiBusy
+              onClicked: { root.sendAi(aiInput.text); aiInput.text = ""; }
+            }
+            ActionButton {
+              text: "Stop"
+              ink: root.ink; surface: root.surface; accent: root.accent
+              font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+              enabled: root.aiBusy
+              onClicked: { aiProcess.running = false; root.aiBusy = false; root.aiTranscript += "\n(stopped)\n\n"; }
+            }
+          }
+          Text {
+            Layout.fillWidth: true
+            visible: root.aiBusy
+            text: "Assistant is typing" + ".".repeat(root.typingStep + 1)
+            textFormat: Text.PlainText
+            color: root.ink
+            font { family: root.fontFamily; pixelSize: root.fontSize - 1; italic: true }
+          }
+          Rectangle {
+            Layout.fillWidth: true
+            visible: root.aiProposed.length > 0
+            implicitHeight: propColumn.implicitHeight + 20
+            radius: 5
+            color: Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.08)
+            border { color: root.ink; width: 1 }
+            ColumnLayout {
+              id: propColumn
+              anchors { left: parent.left; right: parent.right; top: parent.top; margins: 10 }
+              spacing: 6
+              Text {
+                Layout.fillWidth: true
+                text: "PROPOSED COMMANDS (dry run)"
+                textFormat: Text.PlainText
+                color: root.ink
+                font { family: root.fontFamily; pixelSize: root.fontSize - 1; bold: true }
+              }
+              Text {
+                Layout.fillWidth: true
+                text: root.aiProposed
+                textFormat: Text.PlainText
+                color: root.ink
+                font { family: "monospace"; pixelSize: root.fontSize - 1 }
+                wrapMode: Text.WrapAnywhere
+              }
+              Repeater {
+                model: root.aiProposed.split("\n").map(function(c){return c.trim();}).filter(function(c){return c.length>0;})
+                RowLayout {
+                  Layout.fillWidth: true
+                  spacing: 6
+                  Text {
+                    Layout.fillWidth: true
+                    text: modelData
+                    textFormat: Text.PlainText
+                    color: root.ink
+                    font { family: "monospace"; pixelSize: root.fontSize - 1 }
+                    wrapMode: Text.WrapAnywhere
+                  }
+                  ActionButton {
+                    text: "Apply"
+                    ink: root.ink; surface: root.surface; accent: root.accent
+                    font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+                    enabled: !root.aiBusy
+                    onClicked: {
+                      root.aiTranscript += "Applying: " + modelData + "\n";
+                      aiApplyProc.command = ["bash", "-c", modelData];
+                      aiApplyProc.running = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          ActionButton {
+            Layout.fillWidth: true
+            text: "Clear chat"
+            ink: root.ink; surface: root.surface; accent: root.accent
+            font { family: root.fontFamily; pixelSize: root.fontSize - 1 }
+            enabled: !root.aiBusy
+            onClicked: { root.aiTranscript = ""; aiClearProc.running = true; }
+          }
+        }
+      }
+
       ColumnLayout {
         Layout.fillWidth: true
         visible: root.showLegend
@@ -311,5 +455,66 @@ FocusScope {
         onClicked: root.choose("uninstall")
       }
     }
+  }
+
+  Process {
+    id: aiProcess
+    stdout: StdioCollector { id: aiStdout; waitForEnd: true }
+    stderr: StdioCollector { id: aiStderr; waitForEnd: true }
+    onExited: function(code) {
+      root.aiBusy = false;
+      var text = aiStdout.text.trim();
+      if (!text) text = aiStderr.text.trim();
+      if (!text) text = "(no response)";
+      root.aiTranscript += "Assistant: " + text + "\n\n";
+      // Parse proposed commands (lines after "COMMANDS:" prefixed with "- ")
+      var cmds = [];
+      var inC = false;
+      var lines = text.split("\n");
+      for (var i = 0; i < lines.length; i++) {
+        var ln = lines[i].trim();
+        if (ln.toUpperCase().indexOf("COMMANDS:") === 0) { inC = true; continue; }
+        if (inC) {
+          if (!ln) { inC = false; continue; }
+          if (ln.indexOf("- ") === 0) cmds.push(ln.substring(2).trim());
+          else inC = false;
+        }
+      }
+      root.aiProposed = cmds.join("\n");
+    }
+  }
+
+  Process {
+    id: aiHistoryLoader
+    command: ["bash", "-c", "cat ~/.local/state/omarchy-chroma/ai-chat.log 2>/dev/null || true"]
+    stdout: StdioCollector { id: aiHistoryStdout; waitForEnd: true }
+    onExited: function(code) { root.aiTranscript = aiHistoryStdout.text; }
+  }
+  Component.onCompleted: aiHistoryLoader.running = true
+
+  Process {
+    id: aiClearProc
+    command: ["bash", "-c", ": > ~/.local/state/omarchy-chroma/ai-chat.log"]
+    running: false
+  }
+
+  Process {
+    id: aiApplyProc
+    stdout: StdioCollector { id: aiApplyStdout; waitForEnd: true }
+    stderr: StdioCollector { id: aiApplyStderr; waitForEnd: true }
+    onExited: function(code) {
+      var t = aiApplyStdout.text.trim();
+      if (!t) t = aiApplyStderr.text.trim();
+      if (!t) t = "(done)";
+      root.aiTranscript += "Apply result: " + t + "\n\n";
+      root.aiProposed = "";
+    }
+  }
+  Timer {
+    id: typingTimer
+    interval: 400
+    repeat: true
+    running: root.aiBusy
+    onTriggered: root.typingStep = (root.typingStep + 1) % 4
   }
 }

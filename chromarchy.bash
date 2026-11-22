@@ -240,6 +240,15 @@ chroma() {
   case ${1:-legend} in
     legend|colors) chromarchy::legend ;;
     doctor|status) chromarchy::doctor ;;
+    ai)
+      shift
+      if [[ -x "$CHROMA_ROOT/scripts/chroma-ai" ]]; then
+        "$CHROMA_ROOT/scripts/chroma-ai" "$@"
+      else
+        printf 'chroma: AI Stylist is not installed.\n' >&2
+        return 1
+      fi
+      ;;
     reload)
       CHROMA_THEME_SNAPSHOT=
       if chromarchy::theme_reload; then
@@ -264,6 +273,7 @@ chroma() {
         '  explain COMMAND...     Explain highlights without running the command' \
         '  reload                 Reload the active Omarchy theme' \
         '  version                Print the installed version' \
+        '  ai "request"            AI Stylist: plan and apply styling changes' \
         '  help                   Show this help'
       ;;
     *)

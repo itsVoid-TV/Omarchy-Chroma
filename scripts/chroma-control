@@ -321,11 +321,34 @@ def open_installer():
     return "Installer requested in your terminal. Review and confirm there; no Bash changes were made by this button."
 
 
+def open_ai():
+    launcher = shutil.which("omarchy-launch-terminal") or shutil.which("xdg-terminal-exec")
+    if not launcher:
+        raise RuntimeError("No terminal launcher found. Run ./setup --bash from the plugin checkout.")
+    env = os.environ.copy()
+    env.pop("BASH_ENV", None)
+    env.pop("ENV", None)
+    # Open an interactive terminal running the AI Stylist. All changes still
+    # require confirmation inside the terminal.
+    process = subprocess.Popen([launcher, "bash", "-ic", "chroma ai; printf '\nPress Enter to close...'; read"],
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, env=env, start_new_session=True)
+    try:
+        code = process.wait(timeout=0.25)
+        if code:
+            raise RuntimeError("The terminal could not open. Run ./setup --bash from the plugin checkout.")
+    except subprocess.TimeoutExpired:
+        pass
+    return "AI Stylist requested in your terminal. Review and confirm there."
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["status", "inspect", "setup", "enable", "disable",
-                                            "reload", "doctor", "legend", "uninstall", "installer"])
+                                            "reload", "doctor", "legend", "uninstall", "installer",
+                                            "ai", "ai-chat"])
     parser.add_argument("--confirm", action="store_true", help="explicit consent for changing the Bash integration")
+    parser.add_argument("--prompt", default="", help="prompt text for ai-chat")
     args = parser.parse_args()
     mutating = args.action in ("setup", "enable", "disable", "reload", "uninstall")
     lock = None
@@ -349,6 +372,17 @@ def main():
             message, output = control.mutation(args.action)
         if args.action == "installer":
             message = open_installer()
+        elif args.action == "ai":
+            message = open_ai()
+        elif args.action == "ai-chat":
+            if not args.prompt:
+                raise ValueError("ai-chat requires --prompt")
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "chroma-ai-agent.py"), "--once", args.prompt],
+                capture_output=True, text=True, timeout=120)
+            output = clean((proc.stdout + proc.stderr).strip())
+            ok = proc.returncode == 0
+            message = "AI Stylist replied." if ok else "AI Stylist failed."
         data = control.status() if args.action in ("status", "installer") else control.inspect()
         if args.action == "doctor":
             ok, output = control.doctor(data)

@@ -3,7 +3,7 @@
 # Prints the first available runtime on stdout and exits 0, or exits 1 if none.
 set -euo pipefail
 
-for candidate in opencode antigravity codex claude ollama llama-cli; do
+for candidate in opencode antigravity codex claude ollama; do
   if command -v "$candidate" >/dev/null 2>&1; then
     printf '%s\n' "$candidate"
     exit 0
