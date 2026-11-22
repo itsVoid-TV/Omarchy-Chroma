@@ -269,27 +269,30 @@ by `chroma doctor`.
 
 ## Chapter 7 — AI Stylist (local agent)
 
-> **Coming next.** A local AI agent that applies styling for you — no cloud account needed.
+> **Now available (v1).** A local AI agent that applies styling for you — no cloud account needed.
 
-**Idea:** you type a prompt (“dark minimalist theme, blue accents, matching bar”), and an
-agent plans, asks clarifying questions if needed, and applies the changes through the
-existing Chroma paths (theme files, config, plugins).
+**Usage:**
 
-**How it will work:**
+```bash
+chroma ai "dark minimalist theme with blue accents and matching bar"
+chroma ai "create a custom Omarchy theme based on tokyo-night"
+```
+
+**How it works:**
 
 1. **Detect a local AI.** Chroma looks for an already-installed runtime:
    - `opencode` (no account required — recommended)
    - `ollama`, `llama.cpp`, or any OpenAI-compatible local endpoint
    - `antigravity`, `codex`, `claude` (Claude Code) — if you already use them
-2. **If none is found**, Chroma prompts you to install OpenCode (one command, no signup)
-   and continues once it is available.
-3. **Plan → Ask → Apply.** The agent proposes a diff, asks only what is unspecified,
+2. **If none is found**, Chroma prints instructions to install OpenCode
+   (one command, no signup) and exits.
+3. **Plan → Ask → Apply.** The agent proposes a plan, asks only what is unspecified,
    then applies with backup + dry-run, exactly like the installer.
 
 **Safety:** every AI change goes through the same consent, backup, and atomic-activation
 logic as manual setup. The agent never blocks a command and never touches `/usr/share/omarchy`.
 
-This chapter is a preview of the next milestone — feedback welcome.
+This chapter is the first milestone of the AI Stylist — feedback welcome.
 
 ---
 

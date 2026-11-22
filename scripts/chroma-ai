@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Omarchy Chroma AI Stylist — local agent entry point.
+# Detects a local AI runtime and delegates the styling request to it.
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+prompt_file="$script_dir/ai-stylist-prompt.md"
+
+usage() {
+  printf '%s\n' \
+    'Usage: chroma ai "your styling request"' \
+    '' \
+    'Examples:' \
+    '  chroma ai "dark minimalist theme with blue accents"' \
+    '  chroma ai "set up a custom Omarchy theme from tokyo-night"' \
+    '' \
+    'Detects a local AI runtime (opencode, ollama, ...). If none is found,' \
+    'prints instructions to install OpenCode (no account required).'
+}
+
+if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+request="${*:-}"
+if [[ -z "$request" ]]; then
+  usage >&2
+  exit 2
+fi
+
+runtime="$("$script_dir/detect-local-ai.sh" 2>/dev/null || true)"
+if [[ -z "$runtime" ]]; then
+  printf '%s\n' "No local AI runtime found." \
+    "" \
+    "Install OpenCode (no account required):" \
+    "  curl -fsSL https://opencode.ai/install | bash" \
+    "" \
+    "Then re-run: chroma ai \"$request\""
+  exit 1
+fi
+
+system_prompt="$(cat "$prompt_file" 2>/dev/null || printf 'You are the Omarchy Chroma AI Stylist.')"
+
+printf 'Omarchy Chroma AI Stylist\n'
+printf 'Runtime: %s\n' "$runtime"
+printf 'Request: %s\n\n' "$request"
+
+case "$runtime" in
+  opencode)
+    opencode run --auto "$system_prompt
+
+User request: $request"
+    ;;
+  ollama)
+    curl -fsS http://127.0.0.1:11434/api/chat \
+      -H 'Content-Type: application/json' \
+      -d "$(jq -n --arg sp "$system_prompt" --arg rq "$request" \
+        '{model:"llama3.2", messages:[{role:"system",content:$sp},{role:"user",content:$rq}], stream:false}')" \
+      | jq -r '.message.content'
+    ;;
+  openai-compatible:*)
+    url="${runtime#openai-compatible:}"
+    curl -fsS "$url/v1/chat/completions" \
+      -H 'Content-Type: application/json' \
+      -d "$(jq -n --arg sp "$system_prompt" --arg rq "$request" \
+        '{model:"local", messages:[{role:"system",content:$sp},{role:"user",content:$rq}]}')" \
+      | jq -r '.choices[0].message.content'
+    ;;
+  *)
+    printf 'Delegating to %s...\n' "$runtime"
+    "$runtime" "$request"
+    ;;
+esac
