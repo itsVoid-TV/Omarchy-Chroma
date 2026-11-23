@@ -1,3 +1,5 @@
+DONT DOWNLOAD —- UNDER CONSTRUCTION ! DOWNLOAD ONLY IF YOU WANT A BUGGY / INCOMPLETE PLUGIN . VERSION : Chroma-Studio-dev_1.1
+
 # Omarchy Chroma Studio — The Styling Centre for Your Entire Omarchy System
 
 > **New name, same soul.** Formerly *Command Chroma / Omarchy Chroma*. Commands, config paths,
