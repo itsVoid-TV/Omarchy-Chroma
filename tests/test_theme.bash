@@ -172,17 +172,20 @@ else
 fi
 
 saved_home=$HOME
+saved_xdg_state=$XDG_STATE_HOME
 HOME=$state/home
-mkdir -p "$HOME/.local/state/omarchy/current/theme"
-cp -- "$fixtures/vantablack/colors.toml" "$HOME/.local/state/omarchy/current/theme/colors.toml"
-printf 'Vantablack\n' > "$HOME/.local/state/omarchy/current/theme.name"
+XDG_STATE_HOME=$HOME/.local/state
+mkdir -p "$XDG_STATE_HOME/omarchy/current/theme"
+cp -- "$fixtures/vantablack/colors.toml" "$XDG_STATE_HOME/omarchy/current/theme/colors.toml"
+printf 'Vantablack\n' > "$XDG_STATE_HOME/omarchy/current/theme.name"
 reset_theme
 chromarchy::theme_apply
 expect_equal 'current Omarchy state path is discovered automatically' \
-  "$CHROMA_THEME_PATH" "$HOME/.local/state/omarchy/current/theme/colors.toml"
+  "$CHROMA_THEME_PATH" "$XDG_STATE_HOME/omarchy/current/theme/colors.toml"
 expect_equal 'auto-discovered black theme stays readable' \
   "${CHROMA_STYLES[install]}" 'fg=#cecece,bold'
 HOME=$saved_home
+XDG_STATE_HOME=$saved_xdg_state
 
 reset_theme
 CHROMA_THEME_FILE=$fixtures/vantablack/colors.toml

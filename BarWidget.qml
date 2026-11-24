@@ -69,7 +69,7 @@ Ui.BarWidget {
     }
     slotSize: Style.bar.statusSlot
     fontSize: Style.font.body
-    tooltipText: "Command Chroma · " + Model.statusLabel(controlBackend.snapshot)
+    tooltipText: "Chroma Studio · " + Model.statusLabel(controlBackend.snapshot)
     onPressed: root.toggle()
     Rectangle {
       width: 5

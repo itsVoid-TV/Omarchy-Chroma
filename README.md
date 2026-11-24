@@ -1,484 +1,327 @@
-# Command Chroma 
+# Omarchy Chroma Studio
 
-Theme-aware semantic Bash command highlighting for **Omarchy**, with an animated
-English terminal installer, readable contrast, diagnostics, and a native Quattro control panel.
+**A complete Styling Centre for the entire Omarchy system.**
 
-Formerly **Omarchy Chroma**. The existing `chroma` command, configuration, and
-installation paths are kept for compatibility. The GitHub repository has not
-been renamed.
+Not just a plugin — a learning platform, a theme laboratory, and your personal AI stylist. Chroma teaches you how to customize Omarchy, doesn't just throw a plugin interface at you.
 
-> Plugin 0.4.3 is available from `main` and listed in the
-> [Omarchy Plugin Marketplace](https://omarchyplugins.com/plugin.html?id=io.github.itsvoid-tv.command-chroma).
-> The [maintainer approval](https://github.com/omacom/omarchy-plugin-marketplace/issues/8501#issuecomment-5889406917)
-> applies to commit `7b04ed1`; native Omarchy/Wayland acceptance remains pending.
+---
 
-## Install on Omarchy Quattro
+## Quick Start
 
-Add and enable the plugin:
+```bash
+# Via Omarchy Plugin Manager (recommended)
+omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
+
+# Or standalone (no Omarchy widget needed)
+git clone https://github.com/itsVoid-TV/Omarchy-Chroma.git
+cd Omarchy-Chroma
+bash install.sh
+```
+
+Click the **Chroma icon** in your bar → **Set up in terminal** → follow the animated English installer. Open a new Bash terminal and run `chroma doctor`.
+
+---
+
+## What You Get
+
+| Component | Purpose |
+|-----------|---------|
+| **Semantic Bash Highlighting** | Colors commands by *what they do* (install=yellow, remove=red, danger=bright red+underline, git=purple, network=cyan, containers=blue, build=green, navigate=blue-green, inspect/search/editors=variants) |
+| **Theme-Aware Contrast** | Follows your active Omarchy `colors.toml`, lifts faint colors to **≥5.5:1** contrast automatically |
+| **Native Control Panel** | Qt/Quickshell dashboard in your bar: status, theme info, contrast, Doctor, Legend, Enable/Disable, Reload, Uninstall |
+| **Interactive Lessons** | Step-by-step guides built into the README and the **Learn** tab — from "Install your first theme" to "Build a custom plugin" |
+| **Knowunity-Style Library** | A searchable, taggable collection of lessons, snippets, and community themes — parked right in the dashboard |
+| **🎨 Chroma Stylist (AI)** | Detects local AI runtimes (OpenCode, Codex, Claude Code, Oh My Posh, Ollama, LM Studio) and opens a prompt interface. Under the hood: a local AI with a specialized skill to **generate themes, write configs, craft plugins, debug highlighting rules** — no cloud, no API keys |
+
+---
+
+## Screenshots
+
+### English Terminal Installer (animated, safe preview mode)
+
+![Terminal Installer](docs/images/installer-terminal-preview.png)
+
+*Run `./setup --preview` to reproduce this exact capture.*
+
+### Live Semantic Highlighting (Catppuccin theme)
+
+![Catppuccin Highlighting](docs/images/highlighting-catppuccin.png)
+
+*Real Bash + pinned ble.sh, typed live. `chroma legend` output shown above.*
+
+<details>
+<summary>Monochrome theme stress tests</summary>
+
+![Vantablack](docs/images/highlighting-vantablack.png) ![White](docs/images/highlighting-white.png)
+
+*Managed foregrounds meet 5.5:1; ble.sh syntax (URLs, etc.) uses its own styles.*
+</details>
+
+### Control Panel (Qt, dark sample data)
+
+![Dashboard Dark](docs/images/dashboard-dark-preview.png)
+
+*Also available: [Light](docs/images/dashboard-light-preview.png) · [First Run](docs/images/dashboard-first-run-preview.png)*
+
+### Native Omarchy Desktop — *your screenshot here*
+
+![Placeholder](docs/images/dashboard-placeholder.svg)
+
+**Help us complete this:** Open Chroma in your Omarchy bar, take a screenshot, save as `docs/images/omarchy-desktop.webp`. See [image checklist](docs/images/README.md).
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    OMARCHY CHROMA STUDIO                    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │  SEMANTIC    │  │   THEME      │  │   CHROMA         │  │
+│  │  HIGHLIGHT   │  │   ENGINE     │  │   STYLIST (AI)   │  │
+│  │  (Bash/ble)  │  │  (awk/ble)   │  │  (local runtime) │  │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘  │
+│         │                 │                     │           │
+│         ▼                 ▼                     ▼           │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              CONTROL PANEL (Qt/Quickshell)           │  │
+│  │  Status · Theme · Contrast · Doctor · Legend · Learn │  │
+│  │  Enable/Disable · Reload · Uninstall · Stylist       │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                          │                                  │
+│         ┌────────────────┼────────────────┐                │
+│         ▼                ▼                ▼                │
+│  ┌──────────┐     ┌──────────┐     ┌──────────┐           │
+│  │  LESSONS │     │  LIBRARY │     │  SNIPPETS│           │
+│  │  (Learn) │     │ (Knowunity)│   │ (Quick)  │           │
+│  └──────────┘     └──────────┘     └──────────┘           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## The Three Pillars
+
+### 1. Semantic Command Highlighting (The Core)
+
+Chroma colors what a command **does** while you type — not just syntax.
+
+| Category | Color | Examples |
+|----------|-------|----------|
+| **Install / Update** | Yellow, bold | `pacman -Syu`, `flatpak install`, `npm install` |
+| **Remove** | Coral red, bold | `pacman -Rns`, `flatpak uninstall`, `docker rm` |
+| **Dangerous** | Bright red, bold, **underlined** | `rm`, `dd`, `mkfs`, `git reset --hard`, forced pushes |
+| **Privileged** | Orange, bold | `sudo`, `doas`, `pkexec` |
+| **System** | Amber | `systemctl`, `mount`, `chmod` |
+| **Git / VCS** | Purple, bold | `git`, `gh`, `lazygit` |
+| **Network** | Cyan | `curl`, `wget`, `ssh`, `rsync` |
+| **Containers** | Blue | `docker`, `podman`, `kubectl` |
+| **Build / Runtime** | Green | `make`, `cargo`, `go`, `node` |
+| **Navigate / Inspect / Search / Editors** | Blue-green variants | `cd`, `bat`, `rg`, `nvim` |
+
+**Wrapper-aware:** `sudo env LANG=C pacman -Syu firefox && git status` → `sudo` (orange) + `pacman -Syu` (yellow) + `git status` (purple).
+
+**Commands:** `chroma legend`, `chroma doctor`, `chroma explain 'cmd'`, `chroma reload`, `chroma version`.
+
+---
+
+### 2. Lessons & Library (The Learning Layer)
+
+**GitHub README = Lesson Book** — every major feature has a "Lesson" section with prerequisites, steps, verification, and troubleshooting.
+
+**Knowunity-Style Library** (in the Control Panel's **Learn** tab):
+- **Searchable**, **taggable** (theme, plugin, config, scripting, ai)
+- **Community submissions** via PR — lessons, snippets, theme recipes
+- **Progress tracking** — mark lessons complete, see what's next
+- **Offline-first** — bundled with the plugin, works without internet
+
+**Example Lessons:**
+- `L01` Install & verify Chroma
+- `L02` Read & write `config.bash` (custom styles, extra commands)
+- `L03` Build a custom Omarchy theme (colors.toml + theme.name)
+- `L04` Write a semantic highlight rule for your CLI tool
+- `L05` Create an Omarchy plugin from scratch
+- `L06` Use the Chroma Stylist to generate a theme
+- `L07` Debug highlighting with `chroma doctor` / `chroma explain`
+
+---
+
+### 3. 🎨 Chroma Stylist — Your Local AI Theme Engineer
+
+**The Stylist detects what's callable on your machine:**
+
+| Runtime | Detection | Use Case |
+|---------|-----------|----------|
+| **OpenCode** | `opencode` in PATH, local provider configured | Full agentic editing, file ops, git |
+| **Codex** | `codex` in PATH | OpenAI Codex CLI, local reasoning |
+| **Claude Code** | `claude` in PATH | Anthropic's coding agent |
+| **Oh My Posh** | `omp` in PATH | Prompt/theme generation |
+| **Ollama** | `ollama` + model pulled | Fully local LLM (llama3.2, qwen2.5-coder, etc.) |
+| **LM Studio** | `lms` or API on 127.0.0.1:1234 | Local model server with UI |
+| **Antigravity** | `antigravity` in PATH | Local agent runtime |
+
+**No runtime?** The Stylist tells you exactly what to install:
+```bash
+# OpenCode (no account, fully local)
+curl -fsSL https://opencode.ai/install | bash
+
+# Ollama + a coder model
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull qwen2.5-coder:7b
+```
+
+**What the Stylist can do (via specialized local skill):**
+- 🎨 **Generate complete Omarchy themes** (`colors.toml` + `theme.name`) from a description ("warm sunset, high contrast, catppuccin-inspired")
+- ⚙️ **Write `config.bash`** with custom `CHROMA_STYLES`, extra command arrays, tuned contrast
+- 🔌 **Scaffold Omarchy plugins** (manifest.json, BarWidget.qml, install.sh, Backend.qml, Model.js)
+- 🐛 **Debug highlighting rules** — paste a command, get `chroma explain` output + fix suggestions
+- 📝 **Write lessons/snippets** for the Library in the Knowunity format
+- 🔄 **Migrate configs** between Omarchy versions
+
+**Privacy:** 100% local. No telemetry. No cloud API keys. Your terminal input never leaves your machine.
+
+---
+
+## Installation Details
+
+### Omarchy Plugin (Widget + Bash)
 
 ```bash
 omarchy plugin add https://github.com/itsVoid-TV/Omarchy-Chroma.git --enable
 ```
+- Adds the **Chroma widget** to your bar (Quickshell/Qt)
+- **Does not** install Bash integration automatically — click **Set up in terminal** in the panel
+- The terminal installer reviews `.bashrc` changes, backs up, asks for explicit `y`
+- After install: open new terminal → `chroma doctor`
 
-Click the Chroma logo in your bar, then **Set up in terminal**. The English
-installer reviews the Bash changes and asks for confirmation. Open a new Bash
-terminal after installation and run `chroma doctor`.
-
-Omarchy's add command clones and enables the widget; it deliberately does not
-execute install hooks. Adding the widget alone never changes `.bashrc`.
-
-Alternatively, download and extract the
-[main ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
-open a terminal inside its folder, and run:
-
-```bash
-./setup
-```
-
-If the archive tool removed executable permissions, use `python3 setup`.
-The bootstrap animates the Chroma logo, copies this local source into a staging
-directory, validates that copy and installs it. It never clones, pulls or fetches
-Chroma code. The installed snapshot has no Git metadata; use the `omarchy plugin
-add` route above for Git-managed updates. After enabling the widget,
-it continues **in the same terminal** with a separate review and confirmation
-for the Bash integration. The bootstrap phase itself does not touch `.bashrc`.
-`./setup --yes` confirms only the widget; it does not run Bash setup silently.
-
-Already have this checkout? Start only the terminal installer:
-
-```bash
-./setup --bash
-```
-
-For a safe visual preview (no config reads, downloads or changes):
-
-```bash
-./setup --preview
-```
-
-Already installed from the development branch? Follow the
-[one-time switch to main](docs/PLUGIN_TESTING.md#move-an-existing-development-checkout-to-main)
-before using normal plugin updates.
-
-## The terminal installer
-
-All installer text is **English**. The Chroma logo uses
-[`ttfx`](https://github.com/omacom/ttfx), the same text-effects engine used by
-[Omarchy Quattro's screensaver](https://github.com/omacom/omarchy/blob/quattro/bin/omarchy-screensaver),
-with a violet → pink → cyan `beams` animation. The original `tte` command is
-supported as a fallback for older systems. Chroma does not launch the screensaver,
-hide the desktop cursor, alter terminal background settings or stop other effects.
-
-The flow is **Review → Install → Ready**, entirely inside your terminal. Enter
-skips the intro; Escape cancels it. At the install prompt, `y` confirms and
-Enter / `n` / Escape cancels. Ctrl-C interrupts setup and stops its own helpers;
-completed changes remain and should be checked before retrying. Errors stay visible
-and include the retry command. A terminal opened by the widget stays open until
-you press Enter, and the widget refreshes its status on reopening or its next poll.
-
-Use `--no-animation` to skip motion, or `NO_COLOR=1 ./setup --bash` for plain
-output. Missing or failing `ttfx`/`tte` falls back to the static logo; no extra
-package is installed. On narrow terminals the logo becomes a compact `>_` mark.
-
-## Screenshots
-
-### English terminal installer
-
-![Actual Command Chroma terminal installer in safe preview mode](docs/images/installer-terminal-preview.png)
-
-Actual terminal capture from xterm/Xvfb, using the real `ttfx` engine before the
-review screen. This is the installer's safe preview mode, not an AI-generated
-mockup or a native Omarchy/Wayland screenshot. Reproduce it with `./setup --preview`.
-
-### Live Bash highlighting
-
-![Real Bash and ble.sh editing with the Catppuccin palette](docs/images/highlighting-catppuccin.png)
-
-Actual xterm capture with Bash, the pinned ble.sh, and Chroma loaded. The example
-is typed into the real line editor without pressing Return. `chroma legend`
-above it is real Chroma output. Theme colors come from Omarchy's pinned palette.
-
-<details>
-<summary>Black and white theme checks</summary>
-
-![Live Bash highlighting on the Vantablack fixture](docs/images/highlighting-vantablack.png)
-
-![Live Bash highlighting on the White fixture](docs/images/highlighting-white.png)
-
-These monochrome fixtures intentionally retain their own hues. Chroma-managed
-foregrounds meet the contrast target; ordinary ble.sh syntax, such as URL links,
-uses its own styles and is outside that measurement.
-
-</details>
-
-### Control panel
-
-![Command Chroma control panel in Qt with dark sample data](docs/images/dashboard-dark-preview.png)
-
-Real Qt rendering of the shipped control view with **sample status and contrast
-data**, outside the Omarchy host. The [light view](docs/images/dashboard-light-preview.png)
-and [first-run view](docs/images/dashboard-first-run-preview.png) are also included.
-These captures show the component, not native bar placement or monitor behavior.
-
-### Native Omarchy desktop — capture still needed
-
-![Reserved for Chroma in the real Omarchy bar with its panel open](docs/images/dashboard-placeholder.svg)
-
-One on-device image is still needed: the Chroma icon in your Omarchy bar with
-the dashboard open. Save it as `docs/images/omarchy-desktop.webp`. See the
-[image checklist](docs/images/README.md) for exact replacements and provenance.
-
-## Omarchy plugin
-
-The Chroma logo opens the theme-aware control panel with:
-
-- installation/enabled status **for new Bash terminals**, plus update detection;
-- the active Omarchy theme, background, calculated minimum contrast and target;
-- **Set up in terminal**, **Enable / Disable**, **Reload theme**, **Doctor**, and **Legend**;
-- an explicit confirmation before installation, enable/disable, or removal;
-- `.bashrc` backups and a removal action that preserves config and `ble.sh`.
-
-Adding/enabling the widget does not install the Bash add-on, download
-dependencies, or change `.bashrc`. **Set up in terminal** only opens the terminal;
-it never passes silent-install consent. The English terminal installer shows the
-destination, `.bashrc` loader, backup policy and optional pinned ble.sh download.
-Only an explicit `y` at the final review prompt performs setup. It
-installs code from the checked-out plugin revision, not a second clone of
-mutable `main`. After a plugin update, use **Set up in terminal** if the dashboard
-reports a Bash update.
-
-The plugin ID is `io.github.itsvoid-tv.command-chroma`. The supported host is
-Omarchy **Quattro / 4.x** with `qs.Ui.BarWidget`, `Panel`, and `KeyboardPanel`.
-The widget needs Python 3 (standard library only), Bash, and Omarchy's QML host.
-Terminal launching uses `omarchy-launch-terminal`, or `xdg-terminal-exec` when
-the Omarchy wrapper is unavailable; the terminal installer itself can be run directly.
-The Bash installer uses standard coreutils, awk, curl and tar/xz; the isolated
-Doctor uses util-linux's `script`. Bash-only highlighting still works without
-the widget or Python.
-
-Enable/disable takes effect in **new** terminals. Existing terminals keep their
-loaded integration. **Reload theme** requests a refresh at the next prompt in
-already loaded Chroma 0.4+ shells; it does not inject keystrokes, restart terminals,
-or reload executable configuration. Open a new terminal after code/config changes.
-Doctor opens an isolated diagnostic Bash/ble.sh process; it does not inspect or
-change other open terminals.
-
-Palette inspection evaluates your trusted `config.bash`, as the add-on itself
-does, but never your `.bashrc`. Passive background status checks do not execute
-configuration. The contrast number covers theme-managed foregrounds only;
-explicit custom styles are excluded and the legend labels them accordingly.
-There is no network activity in the bridge except an explicitly confirmed setup
-download of a missing `ble.sh` dependency.
-
-For removal, use **Remove Bash integration…** first, then:
-
-```bash
-omarchy plugin remove io.github.itsvoid-tv.command-chroma
-```
-
-Removing/disabling the Omarchy widget alone does not undo a separately installed
-Bash add-on. This is intentional: Omarchy does not run plugin uninstall hooks.
-Backups are retained in `${XDG_STATE_HOME:-~/.local/state}/omarchy-chroma/backups`.
-The [testing guide](docs/PLUGIN_TESTING.md) includes the required on-device checks.
-
-## Bash highlighting
-
-Chroma colors what a command *does* while you type it. Package installation is yellow, removal is red, privileged wrappers are orange, Git is purple, network commands are cyan, and destructive commands are bright red and underlined.
-
-Chroma follows Omarchy's active `colors.toml`. It keeps each theme's own hues,
-but raises faint colors until they reach at least **5.5:1 contrast** against the
-terminal background. A black theme therefore gets light foreground colors; a
-light theme gets dark ones. Theme changes are picked up at the next prompt.
-
-It works in Foot, Ghostty, Alacritty, Kitty, and other compatible terminals
-because the feature lives in Bash rather than in one terminal emulator.
-`ble.sh` emits exact 24-bit color where supported and falls back to indexed
-terminal color otherwise.
-
-## Standalone Bash installation
-
-For Bash highlighting without the Omarchy widget, download and extract the
-[main ZIP](https://github.com/itsVoid-TV/Omarchy-Chroma/archive/refs/heads/main.zip),
-open a terminal inside that folder, and run:
-
-```bash
-bash install.sh
-```
-
-Then open a new terminal and check the installation:
-
-```bash
-chroma doctor
-chroma legend
-```
-
-To inspect Chroma's decision without executing anything:
-
-```bash
-chroma explain 'git push --force-with-lease origin main'
-```
-
-Automatic ghost-text suggestions are disabled. Normal Tab completion and
-Omarchy's completion/history shortcuts remain available. Chroma also removes
-ble.sh's red parse/argument backgrounds and its `[ble: exit N]` marker by
-default; semantic danger colors such as red underlined `rm` remain active.
-
-The installer uses only user-owned XDG directories, adds one marked block to
-`~/.bashrc`, and does **not** call `sudo`. Updates are assembled in a staging
-directory and activated atomically, so an incomplete source cannot overwrite a
-working installation. Existing configuration and symlinked `.bashrc` files are
-preserved. If `ble.sh` is missing, Chroma downloads one pinned build and
-limits the download to 8 MiB before verifying its SHA-256 checksum and
-installing it locally.
-
-Both shipped installers use the reviewed local files, never a fresh remote
-`main`. `install.sh` resolves its source beside itself, or accepts an explicit
-`--source DIR`; incomplete or detached copies fail before changing the
-installation. Piped/inline installers without `--source` are unsupported. The
-pinned, checksum-verified ble.sh dependency is the only installer download.
-
-If you prefer an updateable Git checkout:
+### Standalone Bash (No Widget)
 
 ```bash
 git clone https://github.com/itsVoid-TV/Omarchy-Chroma.git
 cd Omarchy-Chroma
 bash install.sh
 ```
+- Installs `chromarchy.bash`, `lib/*`, `config/defaults.bash` to `~/.local/share/omarchy-chroma/`
+- Adds one marked loader block to `~/.bashrc`
+- Preserves existing config, symlinked `.bashrc`, downloads pinned `ble.sh` (8 MiB, SHA-256 verified)
+- Run `chroma doctor`, `chroma legend` in a new terminal
 
-## Enter, MULTILINE and pasting
-
-ble.sh enters **MULTILINE** when the editing buffer contains a newline. This is
-common when you paste several lines or an entire file. Bracketed paste tells
-the editor which text was pasted: its embedded newlines stay in the buffer so
-you can inspect the text before deciding to execute it. Pasting alone must not
-silently run a sequence of shell commands.
-
-Upstream ble.sh normally makes Enter (`RET` / `C-m`) insert another newline in
-Emacs and Vi insert mode; `Ctrl+J` (`C-j`) submits the buffer. That can look like a
-stuck terminal if you keep pressing Enter. Vi normal mode normally moves within
-a multiline buffer instead of submitting it with Enter.
-
-**Chroma defaults to Enter submitting complete commands, including MULTILINE
-buffers**, in Emacs, Vi insert and Vi normal mode. Both `C-m` and terminal `RET`
-are bound to `accept-line syntax`; Vi's own accept widget preserves its mode
-transitions. In Emacs and Vi insert mode, unfinished quotes or compound commands
-still continue on the next line. `Ctrl+J` keeps its existing binding. To insert
-a literal newline in Emacs or Vi insert mode, use `Ctrl+V`, then `Ctrl+J`.
-
-**Bracketed paste intentionally stays enabled.** Chroma neither disables
-`term_bracketed_paste_mode` nor changes `accept_line_threshold`. Setting the
-latter to `-1` only disables speed-based paste/multiline detection; it does not
-change the Enter binding or replace bracketed-paste protection. Existing
-explicit user overrides of these ble.sh options are respected and shown by
-Doctor. A terminal must support bracketed paste for that protection to work.
-
-To restore upstream ble.sh behavior (or keep your own Enter bindings), add this
-to `~/.config/omarchy-chroma/config.bash`, then **open a new terminal**:
+### Safe Preview (Zero Changes)
 
 ```bash
-CHROMA_ENTER_ACCEPT=0
+./setup --preview
 ```
+Shows the animated installer, sample review screen, and what *would* happen — no config reads, no downloads, no writes.
 
-Remove that line or set it to `1` to restore Chroma's default. Theme reload does
-not reload this setting. If a pasted buffer is unwanted or seems stuck, press
-**Ctrl+C to discard it in the default Emacs mode**; you do not need to close the
-terminal. Vi retains its native Ctrl+C behavior (mode/cancel handling, not a
-whole-buffer discard): press Escape, `H`, `dG`, then `i` to clear the buffer and
-resume insertion. Inspect pasted commands before pressing Enter: Enter
-deliberately executes the complete buffer.
+---
 
-`chroma doctor` reports the Enter policy, editing keymap, loaded Enter bindings,
-bracketed-paste option, speed threshold and Ctrl+C recovery. The panel's Doctor
-uses a separate diagnostic shell, so check `chroma doctor` inside the affected
-terminal for its actual bindings. Detached diagnostics report deferred keymaps
-without loading them or consuming queued bindings.
+## Configuration
 
-## Colors
-
-| Meaning | Omarchy theme role | Examples |
-|---|---|---|
-| Install / update | Yellow, bold | `pacman -Syu`, `flatpak install`, `npm install` |
-| Remove | Coral red, bold | `pacman -Rns`, `flatpak uninstall`, `docker rm` |
-| Dangerous | Bright red, bold, underlined | `rm`, `dd`, `mkfs`, `git reset --hard`, forced Git pushes |
-| Privileged | Orange, bold | `sudo`, `doas`, `pkexec` |
-| System | Amber | `systemctl`, `mount`, `chmod` |
-| Git / VCS | Purple, bold | `git`, `gh`, `lazygit` |
-| Network | Cyan | `curl`, `wget`, `ssh`, `rsync` |
-| Containers | Blue | `docker`, `podman`, `kubectl` |
-| Build / runtime | Green | `make`, `cargo`, `go`, `node` |
-| Navigation / inspection / search / editors | Blue-green variants | `cd`, `bat`, `rg`, `nvim` |
-
-Chroma understands wrappers, their option arguments, and shell chains. This
-includes `sudo`, `env`, `command`, `exec`, `time`, `timeout`, `nice`,
-`stdbuf`, `ionice`, `taskset`, `chrt`, and `xargs`. Commands in `find -exec`,
-`-execdir`, `-ok`, and `-okdir` are classified separately. Parameter expansions
-such as `${#arr[@]}` stay inside their word, and comments end at the newline.
-For example, in:
+Edit `~/.config/omarchy-chroma/config.bash`:
 
 ```bash
-sudo env LANG=C pacman -Syu firefox && git status
-```
-
-With a colorful theme, `sudo` uses its orange role, `pacman -Syu` its yellow
-role, and `git status` its purple role. Monochrome themes retain grayscale hues.
-Arguments such as `firefox` keep normal `ble.sh` syntax highlighting. Query
-forms such as `command -v rm` are shown as inspection rather than falsely
-warning that `rm` will run.
-
-## Commands
-
-| Command | Purpose |
-|---|---|
-| `chroma legend` | Show every semantic color with examples |
-| `chroma doctor` | Check ble.sh, MULTILINE/paste, rendering, theme, config, contrast, and the `.bashrc` loader |
-| `chroma explain COMMAND...` | Print token categories and source ranges without executing the command |
-| `chroma reload` | Reload the current Omarchy palette and report a useful error if it fails |
-| `chroma version` | Print the loaded Chroma version |
-
-Quote the complete line passed to `chroma explain` when spacing or quoting
-matters.
-
-## Customize
-
-Edit:
-
-```text
-~/.config/omarchy-chroma/config.bash
-```
-
-Examples:
-
-```bash
+# Custom semantic styles (always win, not adjusted by contrast guard)
 CHROMA_STYLES[install]='fg=yellow,bold'
-CHROMA_STYLES[danger]='fg=white,bg=red,bold'
+CHROMA_STYLES[danger]='fg=white,bg=red,bold,underline'
 
-# Opt in only if you want ble.sh's automatic ghost-text suggestions:
+# Opt-in ble.sh ghost-text suggestions (default: off)
 CHROMA_SUGGESTIONS=1
 
-# Opt in only if you want ble.sh's red error overlays and exit marker:
+# Opt-in ble.sh red error overlays + exit marker (default: off)
 CHROMA_BLE_ERROR_FEEDBACK=1
 
-# Keep ble.sh's original MULTILINE Enter behavior (Ctrl+J submits):
-CHROMA_ENTER_ACCEPT=0
+# Enter submits complete multiline (default: on)
+CHROMA_ENTER_ACCEPT=1
 
+# Theme integration & contrast target (default: on, 5.5)
+CHROMA_THEME_INTEGRATION=1
+CHROMA_MIN_CONTRAST=5.5
+
+# Extend command classification
 CHROMA_EXTRA_INSTALL_COMMANDS+=(my-installer)
 CHROMA_EXTRA_REMOVE_COMMANDS+=(my-uninstaller)
 CHROMA_EXTRA_DANGER_COMMANDS+=(my-disk-wiper)
 ```
 
-Explicit `CHROMA_STYLES[...]` values always win and are not changed by the
-contrast guard. To tune the automatic theme integration instead:
+**Open a new terminal after changes.** Invalid settings fall back safely and are reported by `chroma doctor`.
 
-```bash
-# Enabled by default:
-CHROMA_THEME_INTEGRATION=1
+---
 
-# Default: 5.5 (WCAG's normal-text baseline is 4.5):
-CHROMA_MIN_CONTRAST=5.5
-```
+## Update / Uninstall
 
-Open a new terminal after changing the configuration. Invalid toggle, array,
-or contrast settings fall back safely and are listed by `chroma doctor`.
-
-## Update
-
-For Git-managed plugins, run:
-
+**Plugin (Git-managed):**
 ```bash
 omarchy plugin update io.github.itsvoid-tv.command-chroma
+# Review diff, confirm, then: Set up in terminal if Bash update reported
 ```
 
-Review the diff. If it opens in a pager, press `q` to close the preview.
-Then confirm `Update ...?` to apply the update; closing the diff alone
-does not install it. Afterwards, choose **Set up in terminal** in the
-Chroma dashboard if it reports a Bash update, confirm the setup, and open
-a new terminal. Run `chroma version` to check the loaded version. See the
-[full plugin update instructions](docs/PLUGIN_TESTING.md#update-an-existing-plugin).
-
-ZIP snapshots made with `./setup` require replacing the widget or switching to
-a Git-managed installation; that same guide covers both paths.
-
-For the standalone version, download and extract a current `main` ZIP and run
-this from its folder. Your config file is preserved and the code is replaced as
-one complete unit:
-
+**Standalone (ZIP or Git):**
 ```bash
-bash install.sh
+# ZIP: download fresh main.zip, extract, run bash install.sh
+# Git: git pull --ff-only && bash install.sh
 ```
 
-For a cloned checkout, use `git pull --ff-only` and run `bash install.sh` again.
-
-## Uninstall
-
+**Uninstall Bash integration:**
 ```bash
 ~/.local/share/omarchy-chroma/uninstall.sh
+# Add --purge to remove user config too (ble.sh is kept)
 ```
 
-Add `--purge` to remove the user color configuration too. The uninstaller deliberately keeps `ble.sh`, because other Bash add-ons may use it.
+**Remove widget:**
+```bash
+omarchy plugin remove io.github.itsvoid-tv.command-chroma
+```
+
+---
 
 ## Troubleshooting
-
-### General diagnostics and recovery
-
-Run:
 
 ```bash
 chroma doctor
 ```
+Should show:
+- Omarchy theme, exact background color
+- Worst contrast ≥ 5.500
+- Valid config, healthy `.bashrc` loader
+- `semantic layer: ready`, `render layer: registered`
+- `red error feedback: disabled`
 
-The report should show your Omarchy theme, its exact background color, a
-`worst contrast` of at least `5.500`, valid configuration, and a healthy
-`.bashrc` loader. It should also report `semantic layer` as `ready`,
-`render layer` as `registered`, and `red error feedback` as `disabled`. After
-changing a theme manually, force an immediate refresh with:
-
+**Force theme refresh:**
 ```bash
 chroma reload
 ```
 
-If an older Chroma version is still loaded after an update, replace the current
-interactive Bash process once:
-
+**Stuck on old version after update:**
 ```bash
 exec bash
 ```
 
-If Bash input ever behaves incorrectly, open a clean recovery shell with:
-
+**Input behaving oddly — clean recovery shell:**
 ```bash
 bash --norc
+# Then uninstall or comment the omarchy-chroma block in ~/.bashrc
 ```
 
-You can then run the uninstaller or temporarily comment out the marked `omarchy-chroma` block in `~/.bashrc`.
-
-Chroma is a visual hint, not a security boundary. It never blocks a command, and a heuristic cannot understand every script, alias, shell function, or program-specific option.
-
-### Empty line above the first prompt
-
-Omarchy's [default Starship configuration](https://github.com/omacom/omarchy/blob/quattro/config/starship.toml)
-sets `add_newline = true`. Starship then inserts an empty line before the first
-prompt in a new terminal. To remove it, edit `~/.config/starship.toml` (or the file
-named by `STARSHIP_CONFIG`) and set:
-
+**Empty line above first prompt:** Starship's `add_newline = true`. Fix in `~/.config/starship.toml`:
 ```toml
 add_newline = false
 ```
 
-Open a new terminal to check the change. Chroma does not edit your Starship
-settings as part of Bash installation.
+---
 
-## Design and privacy
+## Design & Privacy
 
-- Reads `~/.local/state/omarchy/current/theme/colors.toml` as data; the theme
-  file is never sourced or executed.
-- Built for Omarchy's current Bash initialization; it does not switch your login shell.
-- Adds a semantic layer after `ble.sh`'s normal syntax/error highlighting.
-- Uses `ble.sh`'s fzf adapter so Omarchy's completion and history bindings keep working.
-- No `eval` in the parser, no subprocess per keystroke, no telemetry, and no network requests while typing.
-- No OpenAI API key is needed. Deterministic local classification is faster and avoids exposing typed terminal input.
-- User changes stay in `~/.bashrc` and `~/.config`; `/usr/share/omarchy` is never modified.
+- Reads `~/.local/state/omarchy/current/theme/colors.toml` as **data** — never sourced/executed
+- Built for Omarchy's Bash init — doesn't switch your login shell
+- Semantic layer **after** `ble.sh` syntax/error highlighting
+- Uses `ble.sh`'s fzf adapter — Omarchy completion/history shortcuts kept
+- **No `eval`**, no subprocess per keystroke, no telemetry, no network while typing
+- **No OpenAI API key needed** — deterministic local classification
+- User changes stay in `~/.bashrc` / `~/.config` — `/usr/share/omarchy` never modified
+- Follows Omarchy Bash config, `cd`/`zd` alias, dotfiles guidance, official `ble.sh` extension model
 
-The approach follows the current [Omarchy Bash configuration](https://github.com/omacom/omarchy/blob/quattro/default/bashrc), including its [`cd`/`zd` alias](https://github.com/omacom/omarchy/blob/quattro/default/bash/aliases), the [Omarchy dotfiles guidance](https://github.com/omacom/omarchy/blob/quattro/manual/31-dotfiles.md), and the official [`ble.sh` extension model](https://github.com/akinomyoga/ble.sh).
+---
 
 ## Development
 
@@ -486,22 +329,47 @@ The approach follows the current [Omarchy Bash configuration](https://github.com
 bash tests/run.bash
 ```
 
-The suite covers semantic parsing, wrapper option handling, ordered render
-ranges, operators, quotes, redirections, comments, config recovery, atomic
-installation, malformed marker preservation, symlinked `.bashrc` files,
-uninstall, and ShellCheck. It also audits every theme from the pinned Omarchy
-revision and checks the actual RGB/ANSI render from the pinned `ble.sh` build
-in pseudo-terminals using both Vantablack and White. The PTY test reproduces
-Omarchy's output-producing `cd` alias and verifies silent startup without red
-error overlays.
+**Suite covers:**
+- Semantic parsing, wrapper options, ordered render ranges, operators, quotes, redirections, comments
+- Config recovery, atomic installation, malformed marker preservation, symlinked `.bashrc`
+- Uninstall, ShellCheck
+- **Every theme** from pinned Omarchy revision — actual RGB/ANSI render in PTYs (Vantablack + White)
+- Reproduces Omarchy's output-producing `cd` alias, verifies silent startup without red overlays
+- Plugin bridge: explicit consent, no-write inspection, `.bashrc` backups, idempotent setup, symlink preservation, lifecycle actions, concurrency, timeouts, palette errors, missing deps
+- Node tests: pure UI model
+- Set `CHROMA_QMLTESTRUNNER` to Qt 6 `qmltestrunner` for ControlView confirmation/keyboard/dark/light/narrow tests
 
-Plugin bridge tests cover explicit consent, no-write inspection, `.bashrc`
-backups, idempotent setup, symlink preservation, lifecycle actions, concurrency,
-timeouts, palette errors and missing dependencies. Node tests cover the pure UI
-model. Set `CHROMA_QMLTESTRUNNER` to a Qt 6 `qmltestrunner` to run the actual
-control view's confirmation, keyboard, dark/light and narrow-layout tests.
-CI enables those tests; they do not replace an Omarchy/Wayland host smoke test.
+---
+
+## Roadmap (v0.5 → v1.0)
+
+- [ ] **Chroma Stylist v1** — local AI runtime detection + prompt interface (OpenCode, Ollama, LM Studio, Codex, Claude Code)
+- [ ] **Knowunity Library UI** — searchable lessons/snippets in ControlView Learn tab
+- [ ] **Lesson Progress** — local completion tracking, "next lesson" suggestions
+- [ ] **Theme Gallery** — browse/install community themes from the panel
+- [ ] **Plugin Scaffold** — Stylist generates complete plugin boilerplate
+- [ ] **Highlighting Rule Builder** — visual rule editor in the Stylist chat
+- [ ] **Multi-language Docs** — DE/ES/FR/JA translations for lessons
+- [ ] **Native Wayland/Omarchy Smoke Test** — CI on real hardware
+
+---
 
 ## License
 
-MIT. `ble.sh` is a separate BSD-3-Clause dependency and is not vendored into this repository.
+MIT. `ble.sh` is a separate BSD-3-Clause dependency and is not vendored.
+
+---
+
+## Credits
+
+- **Omarchy** by [@basecamp](https://github.com/omacom/omarchy) — the opinionated Arch Linux experience
+- **ble.sh** by [@akinomyoga](https://github.com/akinomyoga/ble.sh) — the Bash line editor that makes this possible
+- **ttfx** by [@omacom](https://github.com/omacom/ttfx) — the text animation engine
+- **Quickshell** — the Qt/QML shell powering Omarchy's bar
+- **Community themes & feedback** — you know who you are
+
+---
+
+**Made with ☕ and 🎨 by [@itsVoid-TV](https://github.com/itsVoid-TV)**
+
+*Omarchy Chroma Studio — because your terminal deserves a stylist.*

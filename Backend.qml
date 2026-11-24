@@ -17,7 +17,7 @@ Item {
     Qt.resolvedUrl("scripts/chroma-control").toString().replace(/^file:\/\//, ""))
 
   function request(name, confirmed) {
-    if (["status", "inspect", "installer", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
+    if (["status", "inspect", "installer", "ai", "enable", "disable", "reload", "doctor", "legend", "uninstall"].indexOf(name) < 0) return;
     if (Model.needsConfirmation(name) && !confirmed) return;
     if (root.busy) {
       // Opening during the initial passive check must still load the palette.
@@ -29,12 +29,30 @@ Item {
     root.timedOut = false;
     if (name !== "status") {
       root.failed = false;
-      root.message = name === "installer" ? "Opening the installer in your terminal…" : "Working…";
+      if (name === "installer") {
+        root.message = "Opening the installer in your terminal…";
+      } else if (name === "ai") {
+        root.message = "Opening the AI Stylist in your terminal…";
+      } else {
+        root.message = "Working…";
+      }
       root.output = "";
     }
-    var argv = ["python3", root.helper, name];
-    if (confirmed || name === "reload") argv.push("--confirm");
-    runner.command = argv;
+    if (name === "ai") {
+      // AI Stylist launches a terminal directly, not through the helper
+      var launcher = "omarchy-launch-terminal";
+      var which = Qt.openUrlExternally("file:///usr/bin/which"); // dummy to trigger which lookup
+      // Use Python to find launcher and launch
+      var aiScript = decodeURIComponent(
+        Qt.resolvedUrl("scripts/chroma-ai").toString().replace(/^file:\/\//, ""));
+      var argv = ["python3", aiScript];
+      if (confirmed) argv.push("--confirm");
+      runner.command = argv;
+    } else {
+      var argv = ["python3", root.helper, name];
+      if (confirmed || name === "reload") argv.push("--confirm");
+      runner.command = argv;
+    }
     watchdog.interval = 30000;
     watchdog.restart();
     runner.running = true;

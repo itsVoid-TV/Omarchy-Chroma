@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Wrapper to launch the Chroma AI Stylist in the user's terminal.
+# Called from the Control Panel's "AI Stylist" button.
+set -euo pipefail
+
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+AGENT="$SCRIPT_DIR/chroma-ai-agent.py"
+
+if [[ ! -f $AGENT ]]; then
+  printf 'Omarchy Chroma: AI Stylist agent not found at %s\n' "$AGENT" >&2
+  exit 1
+fi
+
+# Pass all arguments to the agent
+exec python3 "$AGENT" "$@"

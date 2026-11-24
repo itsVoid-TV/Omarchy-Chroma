@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 — 2026-11-24 (Omarchy Chroma Studio)
+
+- **Rebrand**: Command Chroma → Omarchy Chroma Studio — a complete Styling Centre for Omarchy
+- **Chroma Stylist (AI)**: Local AI runtime detection (OpenCode, Codex, Claude Code, Oh My Posh, Ollama, LM Studio, Antigravity) with interactive prompt interface; specialized skill for generating themes, configs, plugins, highlighting rules, lessons
+- **Knowunity-style Library**: Learn tab in ControlView with searchable, taggable lessons (L01–L07) covering setup, config, theming, parser rules, plugin scaffolding, AI Stylist usage, debugging
+- **New README**: Full lesson book format with architecture diagram, screenshots, three-pillar design (Highlighting, Lessons, Stylist), privacy guarantees
+- **New scripts**: detect-local-ai.sh, ai-stylist-prompt.md, chroma-ai-agent.py, chroma-ai wrapper
+- **ControlView**: Added "AI Stylist" and "Learn / Library" actions; emphasized AI button; Escape closes Legend/Learn views
+- **Backend**: Added "ai" action support; launches AI Stylist terminal via chroma-control
+- **Manifest**: Updated name to "Omarchy Chroma Studio", displayName "Chroma Studio", version 0.5.0
+- **Test fix**: test_theme.bash now sets XDG_STATE_HOME for proper temp directory isolation
+
 ## Unreleased
 
 - Recognize Git force-push short options, option clusters and forced refspecs;
