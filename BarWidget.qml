@@ -13,12 +13,7 @@ Ui.BarWidget {
 
   function open() { if (panelLoader.item) panelLoader.item.open(); }
   function close() { if (panelLoader.item) panelLoader.item.close(); }
-  function toggle() { root.launchApp(); }
-  function launchApp() {
-    if (appLauncher.running) return;
-    appLauncher.command = ["quickshell", "-p", Qt.resolvedUrl("app.qml").toString().replace(/^file:\\/\\//, "")];
-    appLauncher.running = true;
-  }
+  function toggle() { if (root.opened) root.close(); else root.open(); }
   function closeForPopoutSwitch() { if (panelLoader.item) panelLoader.item.closeForPopoutSwitch(); }
   function refresh() { controlBackend.request(root.opened ? "inspect" : "status", false); }
   function injectPanel() {
@@ -35,12 +30,6 @@ Ui.BarWidget {
   Component.onCompleted: root.refresh()
 
   Backend { id: controlBackend }
-
-  Process {
-    id: appLauncher
-    running: false
-    onExited: function(code) { }
-  }
 
   Loader {
     id: panelLoader
